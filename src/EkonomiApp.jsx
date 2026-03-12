@@ -879,7 +879,7 @@ function LoginPage({ onLogin, users, inviteCodes, setUsers, theme, cssVars, supa
               {mode === "login" ? "Välkommen\ntillbaka! 👋" : "Skapa\nkonto ✨"}
             </h1>
             <p style={{ color: "#8a909c", fontSize: 14, lineHeight: 1.5 }}>
-              {mode === "login" ? "Logga in för att se din ekonomiöversikt." : "Registrera dig med en inbjudningskod."}
+              {mode === "login" ? "Logga in med din e-post." : "Skapa ett nytt konto med e-post och lösenord."}
             </p>
           </div>
 
