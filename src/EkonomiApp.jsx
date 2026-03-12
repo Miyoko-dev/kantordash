@@ -2559,7 +2559,7 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
                             {fmtMonth(mk)}{isCurrent && " ✦"}
                           </div>
                           {canEdit && mk !== curMonthKey && (
-                            <button onClick={() => setMonthSchedule(s => Object.fromEntries(Object.entries(s).filter(([k]) => k !== mk)))}
+                            <button onClick={() => setMonthSchedule(s => Object.fromEntries(Object.entries(s).filter(([k]) => k !== mk && k !== (mk + "_amount"))))}
                               style={{ background: "none", border: "none", color: "var(--text2)", cursor: "pointer", fontSize: 14, padding: "0 2px", lineHeight: 1 }}>✕</button>
                           )}
                         </div>
