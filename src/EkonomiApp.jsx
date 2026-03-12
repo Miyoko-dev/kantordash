@@ -917,12 +917,7 @@ function LoginPage({ onLogin, users, inviteCodes, setUsers, theme, cssVars, supa
               </div>
             </div>
 
-            {mode === "register" && (
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", display: "block", marginBottom: 6, letterSpacing: "0.05em", textTransform: "uppercase" }}>Inbjudningskod</label>
-                <input className="login-input" type="text" value={inviteCode} onChange={e => setInviteCode(e.target.value)} placeholder="XXXXX" />
-              </div>
-            )}
+            {/* No invite code needed for cloud registration */}
 
             {mode === "login" && (
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
