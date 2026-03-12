@@ -2596,7 +2596,20 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
                         })() : (
                           <div style={{ fontSize: 12, fontWeight: 600, color: col }}>{selType?.name || "Grundlön"}</div>
                         )}
-                        <div style={{ fontSize: 13, fontWeight: 800, color: col, marginTop: 6 }}>{formatSEK(resolved)}</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: col, marginTop: 6 }}>
+                          {canEdit ? (
+                            <InlineEdit
+                              value={resolved}
+                              type="number"
+                              onChange={v => {
+                                const num = parseFloat(v) || 0;
+                                // Store override amount in monthSchedule as _amountOverride
+                                setMonthSchedule(s => ({ ...s, [mk + "_amount"]: num }));
+                              }}
+                              prefix="kr"
+                            />
+                          ) : formatSEK(resolved)}
+                        </div>
                       </div>
                     );
                   })}
