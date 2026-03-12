@@ -443,6 +443,9 @@ export default function App() {
 
   // Resolve effective salary for a given month using new beredskapTypes system
   function resolveMonthSalary(monthKey) {
+    // Check for manual amount override first
+    const override = monthSchedule[monthKey + "_amount"];
+    if (override != null && override !== "") return Number(override);
     const schedType = monthSchedule[monthKey];
     if (!schedType) return baseSalaryIncome;
     const types = appTexts.beredskapTypes || [];
