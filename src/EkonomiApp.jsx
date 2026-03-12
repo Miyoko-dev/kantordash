@@ -443,6 +443,9 @@ export default function App() {
 
   // Resolve effective salary for a given month using new beredskapTypes system
   function resolveMonthSalary(monthKey) {
+    // Check for manual amount override first
+    const override = monthSchedule[monthKey + "_amount"];
+    if (override != null && override !== "") return Number(override);
     const schedType = monthSchedule[monthKey];
     if (!schedType) return baseSalaryIncome;
     const types = appTexts.beredskapTypes || [];
@@ -2451,6 +2454,9 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
 
   // Resolve effective salary for any month using beredskapTypes
   function resolveMonthSalaryLocal(monthKey) {
+    // Check for manual amount override first
+    const override = monthSchedule[monthKey + "_amount"];
+    if (override != null && override !== "") return Number(override);
     const schedKey = monthSchedule[monthKey];
     const base = currentSalary?.amount || 0;
     if (!schedKey) return base;
@@ -2576,7 +2582,7 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
                                       {items.map(t => {
                                         const isSelected = selected === t.key;
                                         return (
-                                          <button key={t.key} onClick={() => { setMonthSchedule(s => ({ ...s, [mk]: t.key })); setOpenDropdown(null); }}
+                                          <button key={t.key} onClick={() => { setMonthSchedule(s => { const ns = { ...s, [mk]: t.key }; delete ns[mk + "_amount"]; return ns; }); setOpenDropdown(null); }}
                                             style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: isSelected ? t.color + "14" : "transparent", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
                                             <div style={{ width: 28, height: 28, borderRadius: 7, background: t.color + "20", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{t.icon}</div>
                                             <div style={{ flex: 1, textAlign: "left" }}>
@@ -2596,7 +2602,20 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
                         })() : (
                           <div style={{ fontSize: 12, fontWeight: 600, color: col }}>{selType?.name || "Grundlön"}</div>
                         )}
-                        <div style={{ fontSize: 13, fontWeight: 800, color: col, marginTop: 6 }}>{formatSEK(resolved)}</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: col, marginTop: 6 }}>
+                          {canEdit ? (
+                            <InlineEdit
+                              value={resolved}
+                              type="number"
+                              onChange={v => {
+                                const num = parseFloat(v) || 0;
+                                // Store override amount in monthSchedule as _amountOverride
+                                setMonthSchedule(s => ({ ...s, [mk + "_amount"]: num }));
+                              }}
+                              prefix="kr"
+                            />
+                          ) : formatSEK(resolved)}
+                        </div>
                       </div>
                     );
                   })}
