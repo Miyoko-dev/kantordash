@@ -896,8 +896,8 @@ function LoginPage({ onLogin, users, inviteCodes, setUsers, theme, cssVars, supa
           {/* Fields */}
           <div className="login-anim" style={{ animationDelay: "0.12s", display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", display: "block", marginBottom: 6, letterSpacing: "0.05em", textTransform: "uppercase" }}>Användarnamn</label>
-              <input className="login-input" type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="ditt_användarnamn" />
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", display: "block", marginBottom: 6, letterSpacing: "0.05em", textTransform: "uppercase" }}>{usernameLabel}</label>
+              <input className="login-input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={usernamePlaceholder} />
             </div>
 
             <div>
