@@ -2435,9 +2435,13 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
   // Close dropdown on outside click
   useEffect(() => {
     if (!openDropdown) return;
-    const handler = () => setOpenDropdown(null);
-    document.addEventListener("click", handler);
-    return () => document.removeEventListener("click", handler);
+    const handler = (e) => {
+      const target = e.target;
+      if (target instanceof Element && target.closest('[data-income-schedule-dropdown="true"]')) return;
+      setOpenDropdown(null);
+    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
   }, [openDropdown]);
   const [newExtra, setNewExtra] = useState(() => {
     const d = new Date();
