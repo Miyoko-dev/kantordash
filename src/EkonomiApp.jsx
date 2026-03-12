@@ -469,12 +469,50 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // ── CLOUD SAVE (debounced) ──────────────────────────────────
+  // ── REALTIME SYNC (live updates across devices) ─────────────
+  const realtimeIgnoreRef = useRef({}); // keys we just saved ourselves
+  const DATA_SETTERS = {
+    expenses: setExpenses, debts: setDebts, assets: setAssets, income: setIncome,
+    beredskap: setBeredskap, extraIncome: setExtraIncome, savingsAccounts: setSavingsAccounts,
+    goals: setGoals, history: setHistory, pageVisibility: setPageVisibility,
+    monthlyHistory: setMonthlyHistory, futureSalaries: setFutureSalaries,
+    monthSchedule: setMonthSchedule, plannedExpenses: setPlannedExpenses,
+    wishes: setWishes, categoryMeta: setCategoryMeta, aiMessages: setAiMessages, users: setUsers,
+  };
+
+  useEffect(() => {
+    if (!supabaseUser) return;
+    const channel = supabase
+      .channel('user_data_sync')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'user_data',
+        filter: `user_id=eq.${supabaseUser.id}`,
+      }, (payload) => {
+        const row = payload.new;
+        if (!row || !row.data_key) return;
+        // Skip if we just saved this key ourselves (within last 2s)
+        if (realtimeIgnoreRef.current[row.data_key] && Date.now() - realtimeIgnoreRef.current[row.data_key] < 2000) return;
+        const setter = DATA_SETTERS[row.data_key];
+        if (setter) {
+          if (row.data_key === 'appTexts') {
+            setAppTexts(prev => ({ ...prev, ...row.data_value }));
+          } else {
+            setter(row.data_value);
+          }
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [supabaseUser?.id]);
+
   const cloudSaveTimers = useRef({});
   function cloudSave(key, value) {
     if (!supabaseUser) return;
     if (cloudSaveTimers.current[key]) clearTimeout(cloudSaveTimers.current[key]);
     cloudSaveTimers.current[key] = setTimeout(() => {
+      realtimeIgnoreRef.current[key] = Date.now(); // mark to skip our own echo
       saveUserData(supabaseUser.id, key, value);
     }, 800);
   }
