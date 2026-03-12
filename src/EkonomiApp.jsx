@@ -1077,7 +1077,7 @@ function Sidebar({ page, setPage, user, setUser, sidebarOpen, setSidebarOpen, th
             </button>
           ))}
         </div>
-        <button onClick={() => { saveLS("sessionUserId", null); setUser(null); }} style={{ width: "100%", background: "var(--bg2)", border: "none", borderRadius: 10, padding: "9px", fontSize: 13, color: "var(--text2)", fontWeight: 600 }}>
+        <button onClick={async () => { saveLS("sessionUserId", null); await supabase.auth.signOut(); setUser(null); }} style={{ width: "100%", background: "var(--bg2)", border: "none", borderRadius: 10, padding: "9px", fontSize: 13, color: "var(--text2)", fontWeight: 600 }}>
           ← Logga ut
         </button>
       </div>
