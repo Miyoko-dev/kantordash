@@ -2531,7 +2531,9 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
           {(() => {
             const btypes = appTexts.beredskapTypes || [];
             const COLORS = Object.fromEntries(btypes.map(t => [t.key, t.color]));
-            const allMonths = Object.keys(monthSchedule).sort();
+            const allMonths = Object.keys(monthSchedule)
+              .filter(k => /^\d{4}-\d{2}$/.test(k))
+              .sort();
             // Always show current month even if not in schedule
             const monthsToShow = allMonths.includes(curMonthKey) ? allMonths : [...allMonths, curMonthKey].sort();
 
