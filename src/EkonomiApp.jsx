@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase, saveUserData, loadAllUserData, loadProfile, upsertProfile } from "./lib/supabase";
 
 // ============================================================
 // MOCK DATA & INITIAL STATE
@@ -264,6 +265,8 @@ function saveLS(key, value) {
 export default function App() {
   const [theme, setTheme] = useState(() => loadLS("theme", "light"));
   const [user, setUser] = useState(null);
+  const [supabaseUser, setSupabaseUser] = useState(null); // auth.users record
+  const [cloudLoaded, setCloudLoaded] = useState(false);
   const [page, setPage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -402,7 +405,90 @@ export default function App() {
   useEffect(() => { saveLS("categoryMeta", categoryMeta); }, [categoryMeta]);
   useEffect(() => { saveLS("wishes", wishes); }, [wishes]);
 
-  // Auto-promote planned expenses when their datetime arrives
+  // ── SUPABASE AUTH LISTENER ──────────────────────────────────
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setSupabaseUser(session.user);
+        // Load profile
+        const profile = await loadProfile(session.user.id);
+        if (profile) {
+          setUser({ id: profile.user_id, username: profile.username || session.user.email, role: profile.role || "admin", displayName: profile.display_name || profile.username || session.user.email });
+          if (profile.theme) setTheme(profile.theme);
+        } else {
+          // Create profile on first login
+          const username = session.user.email?.split("@")[0] || "user";
+          await upsertProfile(session.user.id, { username, display_name: username, role: "admin", theme: "light" });
+          setUser({ id: session.user.id, username, role: "admin", displayName: username });
+        }
+        // Load all cloud data
+        const cloudData = await loadAllUserData(session.user.id);
+        if (Object.keys(cloudData).length > 0) {
+          if (cloudData.expenses) setExpenses(cloudData.expenses);
+          if (cloudData.debts) setDebts(cloudData.debts);
+          if (cloudData.assets) setAssets(cloudData.assets);
+          if (cloudData.income) setIncome(cloudData.income);
+          if (cloudData.beredskap) setBeredskap(cloudData.beredskap);
+          if (cloudData.extraIncome) setExtraIncome(cloudData.extraIncome);
+          if (cloudData.savingsAccounts) setSavingsAccounts(cloudData.savingsAccounts);
+          if (cloudData.goals) setGoals(cloudData.goals);
+          if (cloudData.history) setHistory(cloudData.history);
+          if (cloudData.pageVisibility) setPageVisibility(cloudData.pageVisibility);
+          if (cloudData.monthlyHistory) setMonthlyHistory(cloudData.monthlyHistory);
+          if (cloudData.futureSalaries) setFutureSalaries(cloudData.futureSalaries);
+          if (cloudData.monthSchedule) setMonthSchedule(cloudData.monthSchedule);
+          if (cloudData.appTexts) setAppTexts(prev => ({ ...prev, ...cloudData.appTexts }));
+          if (cloudData.plannedExpenses) setPlannedExpenses(cloudData.plannedExpenses);
+          if (cloudData.wishes) setWishes(cloudData.wishes);
+          if (cloudData.categoryMeta) setCategoryMeta(cloudData.categoryMeta);
+          if (cloudData.aiMessages) setAiMessages(cloudData.aiMessages);
+          if (cloudData.users) setUsers(cloudData.users);
+        }
+        setCloudLoaded(true);
+      } else {
+        setSupabaseUser(null);
+        setUser(null);
+        setCloudLoaded(false);
+      }
+    });
+    // Check existing session
+    supabase.auth.getSession();
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // ── CLOUD SAVE (debounced) ──────────────────────────────────
+  const cloudSaveTimers = useRef({});
+  function cloudSave(key, value) {
+    if (!supabaseUser) return;
+    if (cloudSaveTimers.current[key]) clearTimeout(cloudSaveTimers.current[key]);
+    cloudSaveTimers.current[key] = setTimeout(() => {
+      saveUserData(supabaseUser.id, key, value);
+    }, 800);
+  }
+
+  // Cloud-sync all data on changes (only after initial cloud load)
+  useEffect(() => { if (cloudLoaded) cloudSave("expenses", expenses); }, [expenses, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("debts", debts); }, [debts, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("assets", assets); }, [assets, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("income", income); }, [income, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("beredskap", beredskap); }, [beredskap, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("extraIncome", extraIncome); }, [extraIncome, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("savingsAccounts", savingsAccounts); }, [savingsAccounts, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("goals", goals); }, [goals, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("history", history); }, [history, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("pageVisibility", pageVisibility); }, [pageVisibility, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("monthlyHistory", monthlyHistory); }, [monthlyHistory, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("futureSalaries", futureSalaries); }, [futureSalaries, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("monthSchedule", monthSchedule); }, [monthSchedule, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("appTexts", appTexts); }, [appTexts, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("plannedExpenses", plannedExpenses); }, [plannedExpenses, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("wishes", wishes); }, [wishes, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("categoryMeta", categoryMeta); }, [categoryMeta, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("aiMessages", aiMessages); }, [aiMessages, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("users", users); }, [users, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded && supabaseUser) upsertProfile(supabaseUser.id, { theme }); }, [theme, cloudLoaded]);
+
+
   const promoteRef = useRef([]);
   useEffect(() => {
     function promote() {
@@ -532,7 +618,7 @@ export default function App() {
     setDebts(ds => ds.map(d => d.id === id ? { ...d, [field]: value } : d));
   }
 
-  if (!user) return <LoginPage onLogin={(u) => setUser(u)} users={users} inviteCodes={INVITE_CODES} setUsers={setUsers} theme={theme} cssVars={cssVars} />;
+  if (!user) return <LoginPage onLogin={(u) => setUser(u)} users={users} inviteCodes={INVITE_CODES} setUsers={setUsers} theme={theme} cssVars={cssVars} supabaseUser={supabaseUser} />;
 
   const canEdit = user.role === "admin" || user.role === "editor";
 
@@ -703,46 +789,43 @@ const PAGE_LABELS = {
 // ============================================================
 // LOGIN PAGE
 // ============================================================
-function LoginPage({ onLogin, users, inviteCodes, setUsers, theme, cssVars }) {
+function LoginPage({ onLogin, users, inviteCodes, setUsers, theme, cssVars, supabaseUser }) {
   const [mode, setMode] = useState("login");
-  const [username, setUsername] = useState(() => loadLS("rememberUser", ""));
+  const [email, setEmail] = useState(() => loadLS("rememberUser", ""));
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(() => !!loadLS("rememberUser", ""));
   const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
 
-  // Auto-login if saved session exists
-  useEffect(() => {
-    const savedId = loadLS("sessionUserId", null);
-    if (savedId) {
-      const u = users.find(u => u.id === savedId && !u.disabled);
-      if (u) onLogin(u);
+  async function handleLogin() {
+    setError(""); setLoading(true);
+    const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (err) {
+      setError("Felaktigt e-post eller lösenord.");
+    } else {
+      if (rememberMe) saveLS("rememberUser", email);
+      else saveLS("rememberUser", "");
     }
-  }, []);
-
-  function handleLogin() {
-    const u = users.find(u => u.username === username && u.password === password && !u.disabled);
-    if (u) {
-      if (rememberMe) {
-        saveLS("rememberUser", username);
-        saveLS("sessionUserId", u.id);
-      } else {
-        saveLS("rememberUser", "");
-        saveLS("sessionUserId", null);
-      }
-      onLogin(u);
-    }
-    else setError("Felaktigt användarnamn eller lösenord.");
   }
 
-  function handleRegister() {
-    if (!inviteCodes.includes(inviteCode.toUpperCase())) { setError("Ogiltig inbjudningskod."); return; }
-    if (users.find(u => u.username === username)) { setError("Användarnamnet är redan taget."); return; }
-    const newUser = { id: Date.now(), username, password, role: "editor", lastLogin: new Date().toLocaleString("sv-SE"), disabled: false };
-    setUsers(u => [...u, newUser]);
-    onLogin(newUser);
+  async function handleRegister() {
+    setError(""); setLoading(true);
+    const { error: err } = await supabase.auth.signUp({ email, password });
+    setLoading(false);
+    if (err) {
+      setError(err.message);
+    } else {
+      setSuccessMsg("Konto skapat! Du är nu inloggad.");
+    }
   }
+
+  // Label fix: "Användarnamn" -> "E-post"
+  const usernameLabel = "E-post";
+  const usernamePlaceholder = "din@email.com";
 
 
   return (
@@ -796,7 +879,7 @@ function LoginPage({ onLogin, users, inviteCodes, setUsers, theme, cssVars }) {
               {mode === "login" ? "Välkommen\ntillbaka! 👋" : "Skapa\nkonto ✨"}
             </h1>
             <p style={{ color: "#8a909c", fontSize: 14, lineHeight: 1.5 }}>
-              {mode === "login" ? "Logga in för att se din ekonomiöversikt." : "Registrera dig med en inbjudningskod."}
+              {mode === "login" ? "Logga in med din e-post." : "Skapa ett nytt konto med e-post och lösenord."}
             </p>
           </div>
 
@@ -813,8 +896,8 @@ function LoginPage({ onLogin, users, inviteCodes, setUsers, theme, cssVars }) {
           {/* Fields */}
           <div className="login-anim" style={{ animationDelay: "0.12s", display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", display: "block", marginBottom: 6, letterSpacing: "0.05em", textTransform: "uppercase" }}>Användarnamn</label>
-              <input className="login-input" type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="ditt_användarnamn" />
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", display: "block", marginBottom: 6, letterSpacing: "0.05em", textTransform: "uppercase" }}>{usernameLabel}</label>
+              <input className="login-input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={usernamePlaceholder} />
             </div>
 
             <div>
@@ -834,12 +917,7 @@ function LoginPage({ onLogin, users, inviteCodes, setUsers, theme, cssVars }) {
               </div>
             </div>
 
-            {mode === "register" && (
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", display: "block", marginBottom: 6, letterSpacing: "0.05em", textTransform: "uppercase" }}>Inbjudningskod</label>
-                <input className="login-input" type="text" value={inviteCode} onChange={e => setInviteCode(e.target.value)} placeholder="XXXXX" />
-              </div>
-            )}
+            {/* No invite code needed for cloud registration */}
 
             {mode === "login" && (
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -857,8 +935,14 @@ function LoginPage({ onLogin, users, inviteCodes, setUsers, theme, cssVars }) {
               </div>
             )}
 
-            <button className="login-btn-primary" onClick={mode === "login" ? handleLogin : handleRegister}>
-              {mode === "login" ? "Logga in →" : "Skapa konto →"}
+            {successMsg && (
+              <div style={{ background: "#d1fae5", color: "#065f46", borderRadius: 10, padding: "10px 14px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+                <span>✅</span> {successMsg}
+              </div>
+            )}
+
+            <button className="login-btn-primary" onClick={mode === "login" ? handleLogin : handleRegister} disabled={loading}>
+              {loading ? "Laddar..." : mode === "login" ? "Logga in →" : "Skapa konto →"}
             </button>
           </div>
 
@@ -993,7 +1077,7 @@ function Sidebar({ page, setPage, user, setUser, sidebarOpen, setSidebarOpen, th
             </button>
           ))}
         </div>
-        <button onClick={() => { saveLS("sessionUserId", null); setUser(null); }} style={{ width: "100%", background: "var(--bg2)", border: "none", borderRadius: 10, padding: "9px", fontSize: 13, color: "var(--text2)", fontWeight: 600 }}>
+        <button onClick={async () => { saveLS("sessionUserId", null); await supabase.auth.signOut(); setUser(null); }} style={{ width: "100%", background: "var(--bg2)", border: "none", borderRadius: 10, padding: "9px", fontSize: 13, color: "var(--text2)", fontWeight: 600 }}>
           ← Logga ut
         </button>
       </div>
