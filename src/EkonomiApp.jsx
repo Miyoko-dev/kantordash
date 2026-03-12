@@ -265,6 +265,8 @@ function saveLS(key, value) {
 export default function App() {
   const [theme, setTheme] = useState(() => loadLS("theme", "light"));
   const [user, setUser] = useState(null);
+  const [supabaseUser, setSupabaseUser] = useState(null); // auth.users record
+  const [cloudLoaded, setCloudLoaded] = useState(false);
   const [page, setPage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
