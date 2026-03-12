@@ -267,6 +267,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [supabaseUser, setSupabaseUser] = useState(null); // auth.users record
   const [cloudLoaded, setCloudLoaded] = useState(false);
+  const [authReady, setAuthReady] = useState(false); // true once session check is done
   const [page, setPage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
