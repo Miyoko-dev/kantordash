@@ -512,6 +512,7 @@ export default function App() {
     if (!supabaseUser) return;
     if (cloudSaveTimers.current[key]) clearTimeout(cloudSaveTimers.current[key]);
     cloudSaveTimers.current[key] = setTimeout(() => {
+      realtimeIgnoreRef.current[key] = Date.now(); // mark to skip our own echo
       saveUserData(supabaseUser.id, key, value);
     }, 800);
   }
