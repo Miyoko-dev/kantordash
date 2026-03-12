@@ -2579,7 +2579,7 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
                                       {items.map(t => {
                                         const isSelected = selected === t.key;
                                         return (
-                                          <button key={t.key} onClick={() => { setMonthSchedule(s => ({ ...s, [mk]: t.key })); setOpenDropdown(null); }}
+                                          <button key={t.key} onClick={() => { setMonthSchedule(s => { const ns = { ...s, [mk]: t.key }; delete ns[mk + "_amount"]; return ns; }); setOpenDropdown(null); }}
                                             style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: isSelected ? t.color + "14" : "transparent", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
                                             <div style={{ width: 28, height: 28, borderRadius: 7, background: t.color + "20", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{t.icon}</div>
                                             <div style={{ flex: 1, textAlign: "left" }}>
