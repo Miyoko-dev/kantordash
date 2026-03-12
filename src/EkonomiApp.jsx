@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase, saveUserData, loadAllUserData, loadProfile, upsertProfile } from "./lib/supabase";
 
 // ============================================================
 // MOCK DATA & INITIAL STATE
