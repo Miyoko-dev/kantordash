@@ -2435,9 +2435,13 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
   // Close dropdown on outside click
   useEffect(() => {
     if (!openDropdown) return;
-    const handler = () => setOpenDropdown(null);
-    document.addEventListener("click", handler);
-    return () => document.removeEventListener("click", handler);
+    const handler = (e) => {
+      const target = e.target;
+      if (target instanceof Element && target.closest('[data-income-schedule-dropdown="true"]')) return;
+      setOpenDropdown(null);
+    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
   }, [openDropdown]);
   const [newExtra, setNewExtra] = useState(() => {
     const d = new Date();
@@ -2527,7 +2531,9 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
           {(() => {
             const btypes = appTexts.beredskapTypes || [];
             const COLORS = Object.fromEntries(btypes.map(t => [t.key, t.color]));
-            const allMonths = Object.keys(monthSchedule).sort();
+            const allMonths = Object.keys(monthSchedule)
+              .filter(k => /^\d{4}-\d{2}$/.test(k))
+              .sort();
             // Always show current month even if not in schedule
             const monthsToShow = allMonths.includes(curMonthKey) ? allMonths : [...allMonths, curMonthKey].sort();
 
@@ -2553,7 +2559,7 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
                             {fmtMonth(mk)}{isCurrent && " ✦"}
                           </div>
                           {canEdit && mk !== curMonthKey && (
-                            <button onClick={() => setMonthSchedule(s => Object.fromEntries(Object.entries(s).filter(([k]) => k !== mk)))}
+                            <button onClick={() => setMonthSchedule(s => Object.fromEntries(Object.entries(s).filter(([k]) => k !== mk && k !== (mk + "_amount"))))}
                               style={{ background: "none", border: "none", color: "var(--text2)", cursor: "pointer", fontSize: 14, padding: "0 2px", lineHeight: 1 }}>✕</button>
                           )}
                         </div>
@@ -2566,8 +2572,8 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
                           const groupOrder = ["bas", "enkel", "nylon", "dubbel", "dubbel_ny"];
                           const grouped = groupOrder.map(g => ({ g, items: btypes.filter(t => t.group === g) })).filter(x => x.items.length);
                           return (
-                            <div style={{ position: "relative" }}>
-                              <button onClick={() => setOpenDropdown(isOpen ? null : mk)}
+                            <div data-income-schedule-dropdown="true" style={{ position: "relative" }}>
+                              <button onClick={(e) => { e.stopPropagation(); setOpenDropdown(isOpen ? null : mk); }}
                                 style={{ width: "100%", display: "flex", alignItems: "center", gap: 6, background: meta.color + "18", border: `1.5px solid ${meta.color}55`, borderRadius: 9, padding: "6px 10px", cursor: "pointer", fontFamily: "inherit" }}>
                                 <span style={{ fontSize: 14 }}>{meta.icon}</span>
                                 <span style={{ flex: 1, fontSize: 11, fontWeight: 700, color: meta.color, textAlign: "left", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta.name}</span>
