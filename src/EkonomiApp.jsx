@@ -406,54 +406,66 @@ export default function App() {
   useEffect(() => { saveLS("categoryMeta", categoryMeta); }, [categoryMeta]);
   useEffect(() => { saveLS("wishes", wishes); }, [wishes]);
 
+  // ── RESTORE SESSION & CLOUD DATA ─────────────────────────────
+  async function restoreUserSession(sessionUser) {
+    setSupabaseUser(sessionUser);
+    const profile = await loadProfile(sessionUser.id);
+    if (profile) {
+      setUser({ id: profile.user_id, username: profile.username || sessionUser.email, role: profile.role || "admin", displayName: profile.display_name || profile.username || sessionUser.email });
+      if (profile.theme) setTheme(profile.theme);
+    } else {
+      const username = sessionUser.email?.split("@")[0] || "user";
+      upsertProfile(sessionUser.id, { username, display_name: username, role: "admin", theme: "light" });
+      setUser({ id: sessionUser.id, username, role: "admin", displayName: username });
+    }
+    const cloudData = await loadAllUserData(sessionUser.id);
+    if (Object.keys(cloudData).length > 0) {
+      if (cloudData.expenses) setExpenses(cloudData.expenses);
+      if (cloudData.debts) setDebts(cloudData.debts);
+      if (cloudData.assets) setAssets(cloudData.assets);
+      if (cloudData.income) setIncome(cloudData.income);
+      if (cloudData.beredskap) setBeredskap(cloudData.beredskap);
+      if (cloudData.extraIncome) setExtraIncome(cloudData.extraIncome);
+      if (cloudData.savingsAccounts) setSavingsAccounts(cloudData.savingsAccounts);
+      if (cloudData.goals) setGoals(cloudData.goals);
+      if (cloudData.history) setHistory(cloudData.history);
+      if (cloudData.pageVisibility) setPageVisibility(cloudData.pageVisibility);
+      if (cloudData.monthlyHistory) setMonthlyHistory(cloudData.monthlyHistory);
+      if (cloudData.futureSalaries) setFutureSalaries(cloudData.futureSalaries);
+      if (cloudData.monthSchedule) setMonthSchedule(cloudData.monthSchedule);
+      if (cloudData.appTexts) setAppTexts(prev => ({ ...prev, ...cloudData.appTexts }));
+      if (cloudData.plannedExpenses) setPlannedExpenses(cloudData.plannedExpenses);
+      if (cloudData.wishes) setWishes(cloudData.wishes);
+      if (cloudData.categoryMeta) setCategoryMeta(cloudData.categoryMeta);
+      if (cloudData.aiMessages) setAiMessages(cloudData.aiMessages);
+      if (cloudData.users) setUsers(cloudData.users);
+    }
+    setCloudLoaded(true);
+  }
+
   // ── SUPABASE AUTH LISTENER ──────────────────────────────────
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // 1. Restore session from storage FIRST
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        setSupabaseUser(session.user);
-        // Load profile
-        const profile = await loadProfile(session.user.id);
-        if (profile) {
-          setUser({ id: profile.user_id, username: profile.username || session.user.email, role: profile.role || "admin", displayName: profile.display_name || profile.username || session.user.email });
-          if (profile.theme) setTheme(profile.theme);
-        } else {
-          // Create profile on first login
-          const username = session.user.email?.split("@")[0] || "user";
-          await upsertProfile(session.user.id, { username, display_name: username, role: "admin", theme: "light" });
-          setUser({ id: session.user.id, username, role: "admin", displayName: username });
-        }
-        // Load all cloud data
-        const cloudData = await loadAllUserData(session.user.id);
-        if (Object.keys(cloudData).length > 0) {
-          if (cloudData.expenses) setExpenses(cloudData.expenses);
-          if (cloudData.debts) setDebts(cloudData.debts);
-          if (cloudData.assets) setAssets(cloudData.assets);
-          if (cloudData.income) setIncome(cloudData.income);
-          if (cloudData.beredskap) setBeredskap(cloudData.beredskap);
-          if (cloudData.extraIncome) setExtraIncome(cloudData.extraIncome);
-          if (cloudData.savingsAccounts) setSavingsAccounts(cloudData.savingsAccounts);
-          if (cloudData.goals) setGoals(cloudData.goals);
-          if (cloudData.history) setHistory(cloudData.history);
-          if (cloudData.pageVisibility) setPageVisibility(cloudData.pageVisibility);
-          if (cloudData.monthlyHistory) setMonthlyHistory(cloudData.monthlyHistory);
-          if (cloudData.futureSalaries) setFutureSalaries(cloudData.futureSalaries);
-          if (cloudData.monthSchedule) setMonthSchedule(cloudData.monthSchedule);
-          if (cloudData.appTexts) setAppTexts(prev => ({ ...prev, ...cloudData.appTexts }));
-          if (cloudData.plannedExpenses) setPlannedExpenses(cloudData.plannedExpenses);
-          if (cloudData.wishes) setWishes(cloudData.wishes);
-          if (cloudData.categoryMeta) setCategoryMeta(cloudData.categoryMeta);
-          if (cloudData.aiMessages) setAiMessages(cloudData.aiMessages);
-          if (cloudData.users) setUsers(cloudData.users);
-        }
-        setCloudLoaded(true);
+        restoreUserSession(session.user).then(() => setAuthReady(true));
+      } else {
+        setAuthReady(true);
+      }
+    });
+
+    // 2. Listen for subsequent auth changes (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION') return; // already handled by getSession above
+      if (session?.user) {
+        restoreUserSession(session.user);
       } else {
         setSupabaseUser(null);
         setUser(null);
         setCloudLoaded(false);
       }
     });
-    // Check existing session
-    supabase.auth.getSession();
+
     return () => subscription.unsubscribe();
   }, []);
 
