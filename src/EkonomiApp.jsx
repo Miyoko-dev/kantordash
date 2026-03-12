@@ -618,7 +618,7 @@ export default function App() {
     setDebts(ds => ds.map(d => d.id === id ? { ...d, [field]: value } : d));
   }
 
-  if (!user) return <LoginPage onLogin={(u) => setUser(u)} users={users} inviteCodes={INVITE_CODES} setUsers={setUsers} theme={theme} cssVars={cssVars} />;
+  if (!user) return <LoginPage onLogin={(u) => setUser(u)} users={users} inviteCodes={INVITE_CODES} setUsers={setUsers} theme={theme} cssVars={cssVars} supabaseUser={supabaseUser} />;
 
   const canEdit = user.role === "admin" || user.role === "editor";
 
