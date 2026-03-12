@@ -2451,6 +2451,9 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
 
   // Resolve effective salary for any month using beredskapTypes
   function resolveMonthSalaryLocal(monthKey) {
+    // Check for manual amount override first
+    const override = monthSchedule[monthKey + "_amount"];
+    if (override != null && override !== "") return Number(override);
     const schedKey = monthSchedule[monthKey];
     const base = currentSalary?.amount || 0;
     if (!schedKey) return base;
