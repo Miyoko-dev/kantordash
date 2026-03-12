@@ -935,8 +935,14 @@ function LoginPage({ onLogin, users, inviteCodes, setUsers, theme, cssVars, supa
               </div>
             )}
 
-            <button className="login-btn-primary" onClick={mode === "login" ? handleLogin : handleRegister}>
-              {mode === "login" ? "Logga in →" : "Skapa konto →"}
+            {successMsg && (
+              <div style={{ background: "#d1fae5", color: "#065f46", borderRadius: 10, padding: "10px 14px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+                <span>✅</span> {successMsg}
+              </div>
+            )}
+
+            <button className="login-btn-primary" onClick={mode === "login" ? handleLogin : handleRegister} disabled={loading}>
+              {loading ? "Laddar..." : mode === "login" ? "Logga in →" : "Skapa konto →"}
             </button>
           </div>
 
