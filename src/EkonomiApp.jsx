@@ -789,46 +789,43 @@ const PAGE_LABELS = {
 // ============================================================
 // LOGIN PAGE
 // ============================================================
-function LoginPage({ onLogin, users, inviteCodes, setUsers, theme, cssVars }) {
+function LoginPage({ onLogin, users, inviteCodes, setUsers, theme, cssVars, supabaseUser }) {
   const [mode, setMode] = useState("login");
-  const [username, setUsername] = useState(() => loadLS("rememberUser", ""));
+  const [email, setEmail] = useState(() => loadLS("rememberUser", ""));
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(() => !!loadLS("rememberUser", ""));
   const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
 
-  // Auto-login if saved session exists
-  useEffect(() => {
-    const savedId = loadLS("sessionUserId", null);
-    if (savedId) {
-      const u = users.find(u => u.id === savedId && !u.disabled);
-      if (u) onLogin(u);
+  async function handleLogin() {
+    setError(""); setLoading(true);
+    const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (err) {
+      setError("Felaktigt e-post eller lösenord.");
+    } else {
+      if (rememberMe) saveLS("rememberUser", email);
+      else saveLS("rememberUser", "");
     }
-  }, []);
-
-  function handleLogin() {
-    const u = users.find(u => u.username === username && u.password === password && !u.disabled);
-    if (u) {
-      if (rememberMe) {
-        saveLS("rememberUser", username);
-        saveLS("sessionUserId", u.id);
-      } else {
-        saveLS("rememberUser", "");
-        saveLS("sessionUserId", null);
-      }
-      onLogin(u);
-    }
-    else setError("Felaktigt användarnamn eller lösenord.");
   }
 
-  function handleRegister() {
-    if (!inviteCodes.includes(inviteCode.toUpperCase())) { setError("Ogiltig inbjudningskod."); return; }
-    if (users.find(u => u.username === username)) { setError("Användarnamnet är redan taget."); return; }
-    const newUser = { id: Date.now(), username, password, role: "editor", lastLogin: new Date().toLocaleString("sv-SE"), disabled: false };
-    setUsers(u => [...u, newUser]);
-    onLogin(newUser);
+  async function handleRegister() {
+    setError(""); setLoading(true);
+    const { error: err } = await supabase.auth.signUp({ email, password });
+    setLoading(false);
+    if (err) {
+      setError(err.message);
+    } else {
+      setSuccessMsg("Konto skapat! Du är nu inloggad.");
+    }
   }
+
+  // Label fix: "Användarnamn" -> "E-post"
+  const usernameLabel = "E-post";
+  const usernamePlaceholder = "din@email.com";
 
 
   return (
