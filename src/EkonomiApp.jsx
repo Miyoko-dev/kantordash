@@ -2573,7 +2573,7 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
                           const grouped = groupOrder.map(g => ({ g, items: btypes.filter(t => t.group === g) })).filter(x => x.items.length);
                           return (
                             <div data-income-schedule-dropdown="true" style={{ position: "relative" }}>
-                              <button onClick={() => setOpenDropdown(isOpen ? null : mk)}
+                              <button onClick={(e) => { e.stopPropagation(); setOpenDropdown(isOpen ? null : mk); }}
                                 style={{ width: "100%", display: "flex", alignItems: "center", gap: 6, background: meta.color + "18", border: `1.5px solid ${meta.color}55`, borderRadius: 9, padding: "6px 10px", cursor: "pointer", fontFamily: "inherit" }}>
                                 <span style={{ fontSize: 14 }}>{meta.icon}</span>
                                 <span style={{ flex: 1, fontSize: 11, fontWeight: 700, color: meta.color, textAlign: "left", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta.name}</span>
