@@ -4733,8 +4733,8 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
     const beredskapBonus = beredskapTotal != null ? beredskapTotal - baseSalary : 0;
     const plannedItems = plannedExpenses.filter(p => {
       if (!p.dueDate) return false;
-      const pd = new Date(p.dueDate);
-      return `${pd.getFullYear()}-${String(pd.getMonth()+1).padStart(2,"0")}` === monthKey;
+      // Planned invoices before the 25th affect previous salary month
+      return getSalaryMonthKeyForDate(p.dueDate) === monthKey;
     });
     const plannedCost = plannedItems.reduce((s, p) => s + p.cost, 0);
     const totalIn    = salary + baseOther + extra;
