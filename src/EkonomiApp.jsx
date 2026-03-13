@@ -5436,21 +5436,18 @@ FORMATTERINGSREGLER (viktigt!):
 - Håll svaret strukturerat men inte längre än nödvändigt`;
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content }))
-        })
+      const { data: fnData, error: fnError } = await supabase.functions.invoke("ai-chat", {
+        body: {
+          systemPrompt,
+          messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
+        },
       });
-      const data = await response.json();
-      const reply = data.content?.[0]?.text || "Tyvärr kunde jag inte svara just nu.";
+      if (fnError) throw fnError;
+      const reply = fnData?.reply || "Tyvärr kunde jag inte svara just nu.";
       setMessages(m => [...m, { role: "assistant", content: reply }].slice(-40));
     } catch (e) {
-      setMessages(m => [...m, { role: "assistant", content: "Anslutningsfel. Kontrollera din internetanslutning." }]);
+      console.error("AI error:", e);
+      setMessages(m => [...m, { role: "assistant", content: "Anslutningsfel. Försök igen om en stund." }]);
     }
     setLoading(false);
   }
