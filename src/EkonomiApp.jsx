@@ -2389,7 +2389,6 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
             const isPast = due <= now;
             const daysLeft = Math.ceil((due - now) / 86400000);
             const meta = CATEGORY_META[p.category] || CATEGORY_META["Övrigt"];
-            const monthLabel = due.toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
             const salaryMonthKey = getSalaryMonthKeyForDate(due);
             const [salaryYear, salaryMonth] = salaryMonthKey.split("-").map(Number);
             const salaryMonthLabel = new Date(salaryYear, salaryMonth - 1, 1).toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
