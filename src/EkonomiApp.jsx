@@ -79,6 +79,19 @@ function getSalaryDate(year, month) {
   return d;
 }
 
+function getSalaryMonthKeyForDate(input) {
+  const d = new Date(input);
+  if (Number.isNaN(d.getTime())) return "";
+  let y = d.getFullYear();
+  let m = d.getMonth(); // 0-index
+  // Rule: invoices before the 25th belong to previous salary month
+  if (d.getDate() < 25) {
+    m -= 1;
+    if (m < 0) { m = 11; y -= 1; }
+  }
+  return `${y}-${String(m + 1).padStart(2, "0")}`;
+}
+
 function getNextSalary() {
   const now = new Date();
   const thisMonth = getSalaryDate(now.getFullYear(), now.getMonth() + 1);
@@ -574,7 +587,8 @@ export default function App() {
   // Computed values
 
   const now_d = new Date();
-  const currentMonthKey = `${now_d.getFullYear()}-${String(now_d.getMonth() + 1).padStart(2, "0")}`;
+  // Salary month key (before 25th belongs to previous salary month)
+  const currentMonthKey = getSalaryMonthKeyForDate(now_d);
   const baseSalaryIncome = income.find(i => i.type === "salary")?.amount || 0;
   const baseOtherIncome = income.filter(i => i.type !== "salary").reduce((s, i) => s + i.amount, 0);
 
@@ -607,19 +621,11 @@ export default function App() {
     if (e.debtLink && paidOffDebtIds.has(e.debtLink)) return s;
     return s + e.cost;
   }, 0);
-  // Salary period logic: salary on 25th means period is ~25th prev month to 25th this month.
-  // Planned expenses before the next salary date should count against the CURRENT salary period.
-  const currentSalaryDate = getSalaryDate(now_d.getFullYear(), now_d.getMonth() + 1);
-  const nextSalaryDate = now_d <= currentSalaryDate ? currentSalaryDate : (
-    now_d.getMonth() === 11
-      ? getSalaryDate(now_d.getFullYear() + 1, 1)
-      : getSalaryDate(now_d.getFullYear(), now_d.getMonth() + 2)
-  );
+
+  // Planned costs should affect the salary month they belong to (before 25th => previous salary)
   const plannedThisMonth = plannedExpenses.filter(p => {
     if (!p.dueDate) return false;
-    const pd = new Date(p.dueDate);
-    // Include planned expenses that fall before the next salary date
-    return pd <= nextSalaryDate && pd >= now_d;
+    return getSalaryMonthKeyForDate(p.dueDate) === currentMonthKey;
   }).reduce((s, p) => s + p.cost, 0);
   const leftover = totalIncome - totalExpenses - plannedThisMonth;
   const totalDebts = debts.reduce((s, d) => s + d.remaining, 0);
@@ -2366,7 +2372,7 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
           <span style={{ fontSize: 18 }}>🗓</span>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#5b21b6" }}>Planerade engångskostnader</div>
-            <div style={{ fontSize: 12, color: "#6d28d9", marginTop: 2, lineHeight: 1.5 }}>Framtida kostnader som 30-dagars fakturor och bokade köp. De syns direkt i <strong>Prognosen</strong> för rätt månad och flyttas automatiskt till Budget som en tillfällig post när datumet och klockslaget infaller.</div>
+            <div style={{ fontSize: 12, color: "#6d28d9", marginTop: 2, lineHeight: 1.5 }}>Framtida kostnader som 30-dagars fakturor och bokade köp. De syns direkt i <strong>Prognosen</strong> på rätt <strong>löneperiod</strong> (före 25:e = förra lönen) och flyttas automatiskt till Budget som en tillfällig post när datumet och klockslaget infaller.</div>
           </div>
         </div>
 
@@ -2383,7 +2389,9 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
             const isPast = due <= now;
             const daysLeft = Math.ceil((due - now) / 86400000);
             const meta = CATEGORY_META[p.category] || CATEGORY_META["Övrigt"];
-            const monthLabel = due.toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
+            const salaryMonthKey = getSalaryMonthKeyForDate(due);
+            const [salaryYear, salaryMonth] = salaryMonthKey.split("-").map(Number);
+            const salaryMonthLabel = new Date(salaryYear, salaryMonth - 1, 1).toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
             return (
               <div key={p.id} style={{
                 background: isPast ? "#fff5f5" : "var(--card)", borderRadius: 14, padding: "14px 18px",
@@ -2403,7 +2411,7 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
                       ? <span style={{ fontSize: 11, background: "#fee2e2", color: "#ef4444", borderRadius: 99, padding: "2px 8px", fontWeight: 700 }}>⚠ Förfallen – väntar på flytt</span>
                       : daysLeft <= 7
                         ? <span style={{ fontSize: 11, background: "#fef3c7", color: "#b45309", borderRadius: 99, padding: "2px 8px", fontWeight: 700 }}>⏰ Om {daysLeft} dag{daysLeft !== 1 ? "ar" : ""}</span>
-                        : <span style={{ fontSize: 11, background: "#ede9fe", color: "#7c3aed", borderRadius: 99, padding: "2px 8px", fontWeight: 600, textTransform: "capitalize" }}>🗓 {monthLabel}</span>
+                        : <span style={{ fontSize: 11, background: "#ede9fe", color: "#7c3aed", borderRadius: 99, padding: "2px 8px", fontWeight: 600, textTransform: "capitalize" }}>💰 Påverkar {salaryMonthLabel}</span>
                     }
                   </div>
                 </div>
@@ -4724,8 +4732,8 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
     const beredskapBonus = beredskapTotal != null ? beredskapTotal - baseSalary : 0;
     const plannedItems = plannedExpenses.filter(p => {
       if (!p.dueDate) return false;
-      const pd = new Date(p.dueDate);
-      return `${pd.getFullYear()}-${String(pd.getMonth()+1).padStart(2,"0")}` === monthKey;
+      // Planned invoices before the 25th affect previous salary month
+      return getSalaryMonthKeyForDate(p.dueDate) === monthKey;
     });
     const plannedCost = plannedItems.reduce((s, p) => s + p.cost, 0);
     const totalIn    = salary + baseOther + extra;
