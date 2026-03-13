@@ -587,7 +587,8 @@ export default function App() {
   // Computed values
 
   const now_d = new Date();
-  const currentMonthKey = `${now_d.getFullYear()}-${String(now_d.getMonth() + 1).padStart(2, "0")}`;
+  // Salary month key (before 25th belongs to previous salary month)
+  const currentMonthKey = getSalaryMonthKeyForDate(now_d);
   const baseSalaryIncome = income.find(i => i.type === "salary")?.amount || 0;
   const baseOtherIncome = income.filter(i => i.type !== "salary").reduce((s, i) => s + i.amount, 0);
 
@@ -620,19 +621,11 @@ export default function App() {
     if (e.debtLink && paidOffDebtIds.has(e.debtLink)) return s;
     return s + e.cost;
   }, 0);
-  // Salary period logic: salary on 25th means period is ~25th prev month to 25th this month.
-  // Planned expenses before the next salary date should count against the CURRENT salary period.
-  const currentSalaryDate = getSalaryDate(now_d.getFullYear(), now_d.getMonth() + 1);
-  const nextSalaryDate = now_d <= currentSalaryDate ? currentSalaryDate : (
-    now_d.getMonth() === 11
-      ? getSalaryDate(now_d.getFullYear() + 1, 1)
-      : getSalaryDate(now_d.getFullYear(), now_d.getMonth() + 2)
-  );
+
+  // Planned costs should affect the salary month they belong to (before 25th => previous salary)
   const plannedThisMonth = plannedExpenses.filter(p => {
     if (!p.dueDate) return false;
-    const pd = new Date(p.dueDate);
-    // Include planned expenses that fall before the next salary date
-    return pd <= nextSalaryDate && pd >= now_d;
+    return getSalaryMonthKeyForDate(p.dueDate) === currentMonthKey;
   }).reduce((s, p) => s + p.cost, 0);
   const leftover = totalIncome - totalExpenses - plannedThisMonth;
   const totalDebts = debts.reduce((s, d) => s + d.remaining, 0);
