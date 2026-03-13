@@ -600,16 +600,26 @@ export default function App() {
   const totalIncome = effectiveSalary + baseOtherIncome
     + extraIncome.filter(e => e.month === currentMonthKey).reduce((s, e) => s + e.amount, 0);
   // Exclude expenses linked to fully paid-off debts (remaining === 0) — freeing up that money
+  // Also exclude hidden (eye-toggled) expenses
   const paidOffDebtIds = new Set(debts.filter(d => d.remaining <= 0).map(d => d.id));
   const totalExpenses = expenses.reduce((s, e) => {
+    if (e.hidden) return s;
     if (e.debtLink && paidOffDebtIds.has(e.debtLink)) return s;
     return s + e.cost;
   }, 0);
-  // Add planned expenses that fall within the current month
+  // Salary period logic: salary on 25th means period is ~25th prev month to 25th this month.
+  // Planned expenses before the next salary date should count against the CURRENT salary period.
+  const currentSalaryDate = getSalaryDate(now_d.getFullYear(), now_d.getMonth() + 1);
+  const nextSalaryDate = now_d <= currentSalaryDate ? currentSalaryDate : (
+    now_d.getMonth() === 11
+      ? getSalaryDate(now_d.getFullYear() + 1, 1)
+      : getSalaryDate(now_d.getFullYear(), now_d.getMonth() + 2)
+  );
   const plannedThisMonth = plannedExpenses.filter(p => {
     if (!p.dueDate) return false;
     const pd = new Date(p.dueDate);
-    return `${pd.getFullYear()}-${String(pd.getMonth()+1).padStart(2,"0")}` === currentMonthKey;
+    // Include planned expenses that fall before the next salary date
+    return pd <= nextSalaryDate && pd >= now_d;
   }).reduce((s, p) => s + p.cost, 0);
   const leftover = totalIncome - totalExpenses - plannedThisMonth;
   const totalDebts = debts.reduce((s, d) => s + d.remaining, 0);
@@ -1995,9 +2005,9 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
   };
 
   const sorted = [...expenses].sort((a, b) => a.order - b.order);
-  const totalBudget = expenses.reduce((s, e) => s + e.cost, 0);
-  const paid   = expenses.filter(e => e.status === "paid").reduce((s, e) => s + e.cost, 0);
-  const unpaid = expenses.filter(e => e.status !== "paid").reduce((s, e) => s + e.cost, 0);
+  const totalBudget = expenses.filter(e => !e.hidden).reduce((s, e) => s + e.cost, 0);
+  const paid   = expenses.filter(e => !e.hidden && e.status === "paid").reduce((s, e) => s + e.cost, 0);
+  const unpaid = expenses.filter(e => !e.hidden && e.status !== "paid").reduce((s, e) => s + e.cost, 0);
 
   const groupOrder = [];
   const groups = {};
@@ -2280,15 +2290,21 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
                           </>
                         ) : (
                           <>
-                            <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--text)", minWidth: 0 }}>
+                            {canEdit && <button onClick={() => updateExpense(e.id, "hidden", !e.hidden)}
+                              style={{ background: "none", border: "none", fontSize: 15, cursor: "pointer", color: e.hidden ? "#cbd5e1" : "var(--text2)", padding: "2px 4px", flexShrink: 0, opacity: e.hidden ? 0.5 : 0.7, transition: "opacity 0.15s" }}
+                              title={e.hidden ? "Visa i beräkning" : "Dölj från beräkning"}>
+                              {e.hidden ? "🙈" : "👁️"}
+                            </button>}
+                            <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--text)", minWidth: 0, opacity: e.hidden ? 0.4 : 1, textDecoration: e.hidden ? "line-through" : "none", transition: "opacity 0.2s" }}>
                               {e.service}
+                              {e.hidden && <span style={{ marginLeft: 7, fontSize: 10, background: "#f1f5f9", color: "#94a3b8", borderRadius: 99, padding: "1px 7px", fontWeight: 700, verticalAlign: "middle" }}>Dold</span>}
                               {e.temporary && <span style={{ marginLeft: 7, fontSize: 10, background: "#fdf4ff", color: "#9333ea", border: "1px solid #e9d5ff", borderRadius: 99, padding: "1px 7px", fontWeight: 700, verticalAlign: "middle" }}>🕐 Tillfällig</span>}
                               {linkedDebt && (linkedDebt.remaining <= 0
                                 ? <span style={{ marginLeft: 7, fontSize: 10, background: "#d1fae5", color: "#10b981", borderRadius: 99, padding: "1px 7px", fontWeight: 700, verticalAlign: "middle" }}>✅ {linkedDebt.name} – frigjord!</span>
                                 : <span style={{ marginLeft: 7, fontSize: 10, background: "#fef3c7", color: "#b45309", borderRadius: 99, padding: "1px 7px", fontWeight: 700, verticalAlign: "middle" }}>🔗 {linkedDebt.name}</span>
                               )}
                             </span>
-                            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", flexShrink: 0 }}>{formatSEK(e.cost)}</span>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", flexShrink: 0, opacity: e.hidden ? 0.4 : 1 }}>{formatSEK(e.cost)}</span>
                             {canEdit && <button onClick={() => cycleStatus(e)} style={{ background: ss.rowBg || "var(--bg2)", border: `1px solid ${ss.dot}44`, borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700, color: ss.dot, cursor: "pointer", flexShrink: 0, fontFamily: "inherit" }}>{ss.label}</button>}
                             {canEdit && <>
                               <button onClick={() => setEditingId(e.id)} style={{ background: "none", border: "none", fontSize: 14, cursor: "pointer", color: "var(--text2)", padding: "2px 4px", flexShrink: 0 }}>✎</button>
@@ -5420,21 +5436,18 @@ FORMATTERINGSREGLER (viktigt!):
 - Håll svaret strukturerat men inte längre än nödvändigt`;
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content }))
-        })
+      const { data: fnData, error: fnError } = await supabase.functions.invoke("ai-chat", {
+        body: {
+          systemPrompt,
+          messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
+        },
       });
-      const data = await response.json();
-      const reply = data.content?.[0]?.text || "Tyvärr kunde jag inte svara just nu.";
+      if (fnError) throw fnError;
+      const reply = fnData?.reply || "Tyvärr kunde jag inte svara just nu.";
       setMessages(m => [...m, { role: "assistant", content: reply }].slice(-40));
     } catch (e) {
-      setMessages(m => [...m, { role: "assistant", content: "Anslutningsfel. Kontrollera din internetanslutning." }]);
+      console.error("AI error:", e);
+      setMessages(m => [...m, { role: "assistant", content: "Anslutningsfel. Försök igen om en stund." }]);
     }
     setLoading(false);
   }
