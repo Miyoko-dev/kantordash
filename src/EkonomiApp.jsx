@@ -79,6 +79,19 @@ function getSalaryDate(year, month) {
   return d;
 }
 
+function getSalaryMonthKeyForDate(input) {
+  const d = new Date(input);
+  if (Number.isNaN(d.getTime())) return "";
+  let y = d.getFullYear();
+  let m = d.getMonth(); // 0-index
+  // Rule: invoices before the 25th belong to previous salary month
+  if (d.getDate() < 25) {
+    m -= 1;
+    if (m < 0) { m = 11; y -= 1; }
+  }
+  return `${y}-${String(m + 1).padStart(2, "0")}`;
+}
+
 function getNextSalary() {
   const now = new Date();
   const thisMonth = getSalaryDate(now.getFullYear(), now.getMonth() + 1);
