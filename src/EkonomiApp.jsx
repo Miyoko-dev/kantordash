@@ -2390,6 +2390,9 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
             const daysLeft = Math.ceil((due - now) / 86400000);
             const meta = CATEGORY_META[p.category] || CATEGORY_META["Övrigt"];
             const monthLabel = due.toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
+            const salaryMonthKey = getSalaryMonthKeyForDate(due);
+            const [salaryYear, salaryMonth] = salaryMonthKey.split("-").map(Number);
+            const salaryMonthLabel = new Date(salaryYear, salaryMonth - 1, 1).toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
             return (
               <div key={p.id} style={{
                 background: isPast ? "#fff5f5" : "var(--card)", borderRadius: 14, padding: "14px 18px",
@@ -2409,7 +2412,7 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
                       ? <span style={{ fontSize: 11, background: "#fee2e2", color: "#ef4444", borderRadius: 99, padding: "2px 8px", fontWeight: 700 }}>⚠ Förfallen – väntar på flytt</span>
                       : daysLeft <= 7
                         ? <span style={{ fontSize: 11, background: "#fef3c7", color: "#b45309", borderRadius: 99, padding: "2px 8px", fontWeight: 700 }}>⏰ Om {daysLeft} dag{daysLeft !== 1 ? "ar" : ""}</span>
-                        : <span style={{ fontSize: 11, background: "#ede9fe", color: "#7c3aed", borderRadius: 99, padding: "2px 8px", fontWeight: 600, textTransform: "capitalize" }}>🗓 {monthLabel}</span>
+                        : <span style={{ fontSize: 11, background: "#ede9fe", color: "#7c3aed", borderRadius: 99, padding: "2px 8px", fontWeight: 600, textTransform: "capitalize" }}>💰 Påverkar {salaryMonthLabel}</span>
                     }
                   </div>
                 </div>
