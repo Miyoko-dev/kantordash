@@ -2005,9 +2005,9 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
   };
 
   const sorted = [...expenses].sort((a, b) => a.order - b.order);
-  const totalBudget = expenses.reduce((s, e) => s + e.cost, 0);
-  const paid   = expenses.filter(e => e.status === "paid").reduce((s, e) => s + e.cost, 0);
-  const unpaid = expenses.filter(e => e.status !== "paid").reduce((s, e) => s + e.cost, 0);
+  const totalBudget = expenses.filter(e => !e.hidden).reduce((s, e) => s + e.cost, 0);
+  const paid   = expenses.filter(e => !e.hidden && e.status === "paid").reduce((s, e) => s + e.cost, 0);
+  const unpaid = expenses.filter(e => !e.hidden && e.status !== "paid").reduce((s, e) => s + e.cost, 0);
 
   const groupOrder = [];
   const groups = {};
