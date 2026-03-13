@@ -2372,7 +2372,7 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
           <span style={{ fontSize: 18 }}>🗓</span>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#5b21b6" }}>Planerade engångskostnader</div>
-            <div style={{ fontSize: 12, color: "#6d28d9", marginTop: 2, lineHeight: 1.5 }}>Framtida kostnader som 30-dagars fakturor och bokade köp. De syns direkt i <strong>Prognosen</strong> för rätt månad och flyttas automatiskt till Budget som en tillfällig post när datumet och klockslaget infaller.</div>
+            <div style={{ fontSize: 12, color: "#6d28d9", marginTop: 2, lineHeight: 1.5 }}>Framtida kostnader som 30-dagars fakturor och bokade köp. De syns direkt i <strong>Prognosen</strong> på rätt <strong>löneperiod</strong> (före 25:e = förra lönen) och flyttas automatiskt till Budget som en tillfällig post när datumet och klockslaget infaller.</div>
           </div>
         </div>
 
