@@ -2290,15 +2290,21 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
                           </>
                         ) : (
                           <>
-                            <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--text)", minWidth: 0 }}>
+                            {canEdit && <button onClick={() => updateExpense(e.id, "hidden", !e.hidden)}
+                              style={{ background: "none", border: "none", fontSize: 15, cursor: "pointer", color: e.hidden ? "#cbd5e1" : "var(--text2)", padding: "2px 4px", flexShrink: 0, opacity: e.hidden ? 0.5 : 0.7, transition: "opacity 0.15s" }}
+                              title={e.hidden ? "Visa i beräkning" : "Dölj från beräkning"}>
+                              {e.hidden ? "🙈" : "👁️"}
+                            </button>}
+                            <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--text)", minWidth: 0, opacity: e.hidden ? 0.4 : 1, textDecoration: e.hidden ? "line-through" : "none", transition: "opacity 0.2s" }}>
                               {e.service}
+                              {e.hidden && <span style={{ marginLeft: 7, fontSize: 10, background: "#f1f5f9", color: "#94a3b8", borderRadius: 99, padding: "1px 7px", fontWeight: 700, verticalAlign: "middle" }}>Dold</span>}
                               {e.temporary && <span style={{ marginLeft: 7, fontSize: 10, background: "#fdf4ff", color: "#9333ea", border: "1px solid #e9d5ff", borderRadius: 99, padding: "1px 7px", fontWeight: 700, verticalAlign: "middle" }}>🕐 Tillfällig</span>}
                               {linkedDebt && (linkedDebt.remaining <= 0
                                 ? <span style={{ marginLeft: 7, fontSize: 10, background: "#d1fae5", color: "#10b981", borderRadius: 99, padding: "1px 7px", fontWeight: 700, verticalAlign: "middle" }}>✅ {linkedDebt.name} – frigjord!</span>
                                 : <span style={{ marginLeft: 7, fontSize: 10, background: "#fef3c7", color: "#b45309", borderRadius: 99, padding: "1px 7px", fontWeight: 700, verticalAlign: "middle" }}>🔗 {linkedDebt.name}</span>
                               )}
                             </span>
-                            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", flexShrink: 0 }}>{formatSEK(e.cost)}</span>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", flexShrink: 0, opacity: e.hidden ? 0.4 : 1 }}>{formatSEK(e.cost)}</span>
                             {canEdit && <button onClick={() => cycleStatus(e)} style={{ background: ss.rowBg || "var(--bg2)", border: `1px solid ${ss.dot}44`, borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700, color: ss.dot, cursor: "pointer", flexShrink: 0, fontFamily: "inherit" }}>{ss.label}</button>}
                             {canEdit && <>
                               <button onClick={() => setEditingId(e.id)} style={{ background: "none", border: "none", fontSize: 14, cursor: "pointer", color: "var(--text2)", padding: "2px 4px", flexShrink: 0 }}>✎</button>
