@@ -550,6 +550,7 @@ export default function App() {
   useEffect(() => { if (cloudLoaded) cloudSave("monthSchedule", monthSchedule); }, [monthSchedule, cloudLoaded]);
   useEffect(() => { if (cloudLoaded) cloudSave("appTexts", appTexts); }, [appTexts, cloudLoaded]);
   useEffect(() => { if (cloudLoaded) cloudSave("plannedExpenses", plannedExpenses); }, [plannedExpenses, cloudLoaded]);
+  useEffect(() => { if (cloudLoaded) cloudSave("recurringExpenses", recurringExpenses); }, [recurringExpenses, cloudLoaded]);
   useEffect(() => { if (cloudLoaded) cloudSave("wishes", wishes); }, [wishes, cloudLoaded]);
   useEffect(() => { if (cloudLoaded) cloudSave("categoryMeta", categoryMeta); }, [categoryMeta, cloudLoaded]);
   useEffect(() => { if (cloudLoaded) cloudSave("aiMessages", aiMessages); }, [aiMessages, cloudLoaded]);
