@@ -493,6 +493,7 @@ export default function App() {
     goals: setGoals, history: setHistory, pageVisibility: setPageVisibility,
     monthlyHistory: setMonthlyHistory, futureSalaries: setFutureSalaries,
     monthSchedule: setMonthSchedule, plannedExpenses: setPlannedExpenses,
+    recurringExpenses: setRecurringExpenses,
     wishes: setWishes, categoryMeta: setCategoryMeta, aiMessages: setAiMessages, users: setUsers,
   };
 
