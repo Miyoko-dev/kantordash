@@ -4710,8 +4710,9 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
     const monthLabel = d.toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
     const salary     = salaryForMonth(monthKey);
     const activeDebts = debts.filter(d2 => calcDebtPayoff(d2.remaining, d2.monthly).months > i);
-    // Skip expenses linked to paid-off debts (freed up money), and temporary for future months
+    // Skip expenses linked to paid-off debts (freed up money), temporary for future months, and hidden
     const monthExpenses = expenses.reduce((s, e) => {
+      if (e.hidden) return s;
       if (e.debtLink && paidOffDebtIds.has(e.debtLink)) return s;
       if (e.temporary && i > 0) return s;
       return s + e.cost;
