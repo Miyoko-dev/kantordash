@@ -406,6 +406,7 @@ export default function App() {
   useEffect(() => { saveLS("monthSchedule", monthSchedule); }, [monthSchedule]);
   useEffect(() => { saveLS("appTexts", appTexts); }, [appTexts]);
   useEffect(() => { saveLS("plannedExpenses", plannedExpenses); }, [plannedExpenses]);
+  useEffect(() => { saveLS("recurringExpenses", recurringExpenses); }, [recurringExpenses]);
   const [wishes, setWishes] = useState(() => loadLS("wishes", []));
   const [categoryMeta, setCategoryMeta] = useState(() => loadLS("categoryMeta", {
     "Boende":          { icon: "🏠", color: "#3b82f6" },
