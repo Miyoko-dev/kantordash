@@ -1558,6 +1558,8 @@ function DashboardPage({ totalIncome, totalExpenses, leftover, totalDebts, netWo
   const activeGoals = allGoals.filter(g => g.saved < g.target);
   const [pinnedGoalId, setPinnedGoalId] = useState(null);
   const [showGoalPicker, setShowGoalPicker] = useState(false);
+  const [pinnedSavingsId, setPinnedSavingsId] = useState(null);
+  const [showSavingsPicker, setShowSavingsPicker] = useState(false);
   const [blickfangTab, setBlickfangTab] = useState("goals"); // "goals" | "savings"
 
   const allSavings = savings || [];
