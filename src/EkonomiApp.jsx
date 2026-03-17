@@ -4332,8 +4332,6 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
                 const d = new Date(); d.setMonth(d.getMonth() + monthsLeft);
                 return d.toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
               })() : null;
-              const streak = goal.streak || 0;
-              const streakEmoji = streak >= 12 ? "🏆" : streak >= 6 ? "🔥" : streak >= 3 ? "⚡" : streak >= 1 ? "✨" : null;
               // Milestones: which ones are reached
               const milestonesSeen = goal.milestonesSeen || [];
               const milestones = [25, 50, 75].map(m => ({ pct: m, reached: pct >= m, seen: milestonesSeen.includes(m) }));
@@ -4343,6 +4341,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
               const chartMax = goal.target;
               const chartW = 220, chartH = 50;
 
+/* NOTE: streak removed */
               return (
                 <Card key={goal.id} style={{ position: "relative", overflow: "hidden" }}>
                   <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: goal.color }} />
@@ -4374,12 +4373,6 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
                             {/* Free badge */}
                             {goal.isFree && (
                               <span style={{ fontSize: 11, background: "#d1fae5", color: "#059669", borderRadius: 99, padding: "1px 8px", fontWeight: 700 }}>🆓 Gratis</span>
-                            )}
-                            {/* Streak badge */}
-                            {streak > 0 && (
-                              <span className="streak-pop" style={{ fontSize: 11, background: streak >= 6 ? "#fef3c7" : "var(--bg2)", color: streak >= 6 ? "#d97706" : "var(--text2)", borderRadius: 99, padding: "1px 8px", fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
-                                {streakEmoji} {streak} {streak === 1 ? "månads streak" : "månaders streak"}
-                              </span>
                             )}
                           </div>
                         </div>
