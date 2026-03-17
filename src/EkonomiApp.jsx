@@ -1796,12 +1796,77 @@ function DashboardPage({ totalIncome, totalExpenses, leftover, totalDebts, netWo
             )
           )}
 
+          {/* Savings picker dropdown */}
+          {showSavingsPicker && blickfangTab === "savings" && (
+            <div style={{ position: "absolute", top: 72, right: 20, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "8px", zIndex: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", minWidth: 220 }}>
+              <button onClick={() => { setPinnedSavingsId(null); setShowSavingsPicker(false); }}
+                style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 12px", borderRadius: 10, border: "none", background: !pinnedSavingsId ? "var(--hover)" : "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                <span style={{ fontSize: 18 }}>📊</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>Alla konton</div>
+                  <div style={{ fontSize: 11, color: "var(--text2)" }}>Visa alla sparkonton</div>
+                </div>
+              </button>
+              {allSavings.map(acc => (
+                <button key={acc.id} onClick={() => { setPinnedSavingsId(acc.id); setShowSavingsPicker(false); }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 12px", borderRadius: 10, border: "none", background: acc.id === pinnedSavingsId ? "var(--hover)" : "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                  <div style={{ width: 18, height: 18, borderRadius: "50%", background: acc.color, flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{acc.name}</div>
+                    <div style={{ fontSize: 11, color: "var(--text2)" }}>{Math.round((acc.balance / Math.max(acc.goal, 1)) * 100)}% · {formatSEK(acc.balance)}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* ── SAVINGS TAB ── */}
           {blickfangTab === "savings" && (
             allSavings.length > 0 ? (
+              pinnedSavingsId ? (() => {
+                const acc = allSavings.find(a => a.id === pinnedSavingsId) || allSavings[0];
+                const pct = Math.min(100, (acc.balance / Math.max(acc.goal, 1)) * 100);
+                const remaining = Math.max(0, acc.goal - acc.balance);
+                const monthly = acc.monthlyDeposit || 0;
+                const monthsLeft = monthly > 0 ? Math.ceil(remaining / monthly) : null;
+                const doneDate = monthsLeft ? (() => { const d = new Date(); d.setMonth(d.getMonth() + monthsLeft); return d.toLocaleDateString("sv-SE", { month: "long", year: "numeric" }); })() : null;
+                return (
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
+                      <div style={{ width: 64, height: 64, borderRadius: 20, background: acc.color + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, flexShrink: 0 }}>🏦</div>
+                      <div>
+                        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em" }}>{acc.name}</div>
+                        <div style={{ fontSize: 13, color: "var(--text2)", marginTop: 2 }}>{acc.bank}</div>
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                        <span style={{ fontSize: 32, fontWeight: 900, letterSpacing: "-0.03em", color: acc.color }}>{formatSEK(acc.balance)}</span>
+                        <span style={{ fontSize: 14, color: "var(--text2)" }}>av {formatSEK(acc.goal)}</span>
+                      </div>
+                      <div style={{ background: "var(--bg2)", borderRadius: 99, height: 12, overflow: "hidden" }}>
+                        <div style={{ width: `${pct}%`, background: acc.color, height: "100%", borderRadius: 99, transition: "width 0.6s ease" }} />
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: acc.color }}>{Math.round(pct)}% klart</span>
+                        <span style={{ fontSize: 13, color: "var(--text2)" }}>{formatSEK(remaining)} kvar</span>
+                      </div>
+                    </div>
+                    {doneDate && (
+                      <div style={{ background: "var(--bg2)", borderRadius: 10, padding: "8px 12px", display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 12 }}>
+                        <span style={{ color: "var(--text2)" }}>📅 {formatSEK(monthly)}/mån · klart</span>
+                        <span style={{ fontWeight: 700, color: acc.color, textTransform: "capitalize" }}>{doneDate}</span>
+                      </div>
+                    )}
+                    {allSavings.length > 1 && (
+                      <div style={{ fontSize: 12, color: "var(--text2)", paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+                        {allSavings.length - 1} fler sparkonton
+                      </div>
+                    )}
+                  </div>
+                );
+              })() : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-
-                {/* Sparande highlight box — mirrors debt card */}
                 {totalMonthlySavings > 0 && (
                   <div style={{ background: "linear-gradient(135deg, #d1fae5, #a7f3d0)", borderRadius: 14, padding: "12px 16px", marginBottom: 4 }}>
                     <div style={{ fontSize: 13, fontWeight: 800, color: "#065f46" }}>
@@ -1816,7 +1881,6 @@ function DashboardPage({ totalIncome, totalExpenses, leftover, totalDebts, netWo
                     </div>
                   </div>
                 )}
-
                 {allSavings.map(acc => {
                   const pct = Math.min(100, (acc.balance / Math.max(acc.goal, 1)) * 100);
                   const remaining = Math.max(0, acc.goal - acc.balance);
@@ -1858,6 +1922,7 @@ function DashboardPage({ totalIncome, totalExpenses, leftover, totalDebts, netWo
                   <span style={{ fontSize: 14, fontWeight: 800, color: "#10b981" }}>{formatSEK(allSavings.reduce((s,a) => s + a.balance, 0))}</span>
                 </div>
               </div>
+              )
             ) : (
               <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text2)" }}>
                 <div style={{ fontSize: 36, marginBottom: 8 }}>🏦</div>
