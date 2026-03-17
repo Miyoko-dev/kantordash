@@ -253,6 +253,7 @@ const FORECAST_TAG_META = {
 
 const DEFAULT_BEREDSKAPYPES = [
   { key: "grundlon",          name: "Grundlön",                  desc: "Endast grundlön, ingen beredskap",             icon: "💼", color: "#94a3b8", amount: 27660, group: "bas",       readOnly: true, tags: ["lon"] },
+  { key: "ny_grundlon",       name: "Ny grundlön",               desc: "Uppdaterad grundlön utan beredskap",          icon: "📈", color: "#2563eb", amount: 30000, group: "bas",       tags: ["lon", "nylon"] },
   { key: "semesterlön",       name: "Semesterlön",               desc: "Lön under semesterperiod",                    icon: "🌴", color: "#f59e0b", amount: 27660, group: "bas",       tags: ["lon", "semester"] },
   { key: "lon_full",          name: "Lön + Full Beredskap",      desc: "Grundlön + helg- och veckoberedskap",          icon: "🛡", color: "#10b981", amount: 34160, group: "enkel",     tags: ["lon", "beredskap"] },
   { key: "lon_halv",          name: "Lön + Halv Beredskap",      desc: "Grundlön + halv beredskap (vecka eller helg)", icon: "🌗", color: "#3b82f6", amount: 31160, group: "enkel",     tags: ["lon", "beredskap"] },
