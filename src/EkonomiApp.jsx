@@ -4925,7 +4925,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
 // ============================================================
 // FORECAST PAGE
 // ============================================================
-function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureSalaries = [], plannedExpenses = [], monthSchedule = {}, appTexts = {} }) {
+function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureSalaries = [], plannedExpenses = [], monthSchedule = {}, appTexts = {}, recurringExpenses = [] }) {
   const months = 12;
   const rows = [];
   const baseSalary    = income.find(i => i.type === "salary")?.amount || 0;
@@ -4936,6 +4936,8 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
   const paidOffDebtIds = new Set(debts.filter(d => d.remaining <= 0).map(d => d.id));
 
   function salaryForMonth(monthKey) {
+    const override = monthSchedule[monthKey + "_amount"];
+    if (override != null && override !== "") return Number(override);
     const schedKey = monthSchedule[monthKey];
     if (schedKey) {
       const found = beredskapTypes.find(t => t.key === schedKey);
@@ -4966,14 +4968,18 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
     const beredskapBonus = beredskapTotal != null ? beredskapTotal - baseSalary : 0;
     const plannedItems = plannedExpenses.filter(p => {
       if (!p.dueDate) return false;
-      // Planned invoices before the 25th affect previous salary month
       return getSalaryMonthKeyForDate(p.dueDate) === monthKey;
     });
     const plannedCost = plannedItems.reduce((s, p) => s + p.cost, 0);
+    // Recurring expenses active for this month
+    const recurringCost = recurringExpenses.filter(r => {
+      if (r.hidden || !r.startDate) return false;
+      return getSalaryMonthKeyForDate(r.startDate) <= monthKey;
+    }).reduce((s, r) => s + r.cost, 0);
     const totalIn    = salary + baseOther + extra;
-    const leftover   = totalIn - monthExpenses - plannedCost;
+    const leftover   = totalIn - monthExpenses - plannedCost - recurringCost;
     const salaryChange = sortedFuture.find(fs => fs.fromMonth === monthKey);
-    rows.push({ label: monthLabel, income: totalIn, salary, expenses: monthExpenses, plannedCost, plannedItems, leftover, extra, extraItems, beredskapBonus, schedType, salaryChange, debtFreeings: debts.filter(d2 => calcDebtPayoff(d2.remaining, d2.monthly).months === i) });
+    rows.push({ label: monthLabel, income: totalIn, salary, expenses: monthExpenses, plannedCost, plannedItems, recurringCost, leftover, extra, extraItems, beredskapBonus, schedType, salaryChange, debtFreeings: debts.filter(d2 => calcDebtPayoff(d2.remaining, d2.monthly).months === i) });
   }
 
   return (
