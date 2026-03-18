@@ -2295,6 +2295,7 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
         {[
           { id: "budget",  label: "💳 Budget" },
           { id: "planned", label: "🗓 Planerade", count: plannedExpenses.length },
+          { id: "recurring", label: "🔁 Sittande", count: recurringExpenses.length },
         ].map(t => (
           <button key={t.id} onClick={() => setBudgetTab(t.id)} style={{
             padding: "8px 20px", borderRadius: 10, border: "none", fontSize: 13, fontWeight: 700,
