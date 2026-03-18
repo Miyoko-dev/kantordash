@@ -2064,7 +2064,7 @@ const STATUS_STYLE  = {
   unpaid:   { dot: "#94a3b8", label: "Obetald",  rowBg: "transparent",          rowBgDark: "transparent",   textColor: "#94a3b8" },
 };
 
-function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDebts, plannedExpenses = [], setPlannedExpenses, categoryMeta: _catMeta, setCategoryMeta, pushUndo = () => {} }) {
+function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDebts, plannedExpenses = [], setPlannedExpenses, categoryMeta: _catMeta, setCategoryMeta, pushUndo = () => {}, recurringExpenses = [], setRecurringExpenses }) {
   const CATEGORY_META = _catMeta || {
     "Boende": { icon: "🏠", color: "#3b82f6" }, "Mat": { icon: "🛒", color: "#f59e0b" },
     "Transport": { icon: "🚌", color: "#06b6d4" }, "Försäkring": { icon: "🛡️", color: "#10b981" },
