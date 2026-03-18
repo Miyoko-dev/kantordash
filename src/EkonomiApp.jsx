@@ -5005,6 +5005,7 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
                 <td style={{ textTransform: "capitalize", fontWeight: 600 }}>{row.label}</td>
                 <td style={{ color: "#10b981", fontWeight: 700 }}>{formatSEK(row.income)}</td>
                 <td style={{ color: "#ef4444" }}>{formatSEK(row.expenses)}</td>
+                <td style={{ color: row.recurringCost > 0 ? "#3b82f6" : "var(--text2)", fontWeight: row.recurringCost > 0 ? 700 : 400 }}>{row.recurringCost > 0 ? formatSEK(row.recurringCost) : "–"}</td>
                 <td style={{ color: row.plannedCost > 0 ? "#8b5cf6" : "var(--text2)", fontWeight: row.plannedCost > 0 ? 700 : 400 }}>{row.plannedCost > 0 ? formatSEK(row.plannedCost) : "–"}</td>
                 <td style={{ fontWeight: 800, color: row.leftover >= 0 ? "#10b981" : "#ef4444" }}>{formatSEK(row.leftover)}</td>
                 <td style={{ fontSize: 12 }}>
