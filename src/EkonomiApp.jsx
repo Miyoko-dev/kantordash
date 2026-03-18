@@ -2912,10 +2912,27 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
 
           {/* Base salary inline edit */}
           {currentSalary && canEdit && (
-            <div style={{ background: "var(--bg2)", borderRadius: 12, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10, border: "2px solid #10b981" }}>
+            <div style={{ background: "var(--bg2)", borderRadius: 12, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10, border: "2px solid #10b981", flexWrap: "wrap" }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: "#10b981", flexShrink: 0 }}>Grundlön (kr):</span>
               <InlineEdit value={currentSalary.amount} onChange={v => updateIncome(currentSalary.id, "amount", parseFloat(v) || 0)} />
-              <span style={{ fontSize: 11, color: "var(--text2)", marginLeft: "auto" }}>= Grundlön i schemat</span>
+              <span style={{ fontSize: 11, color: "var(--text2)" }}>= Grundlön i schemat</span>
+              <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+                {monthSchedule[curMonthKey + "_amount"] != null && monthSchedule[curMonthKey + "_amount"] !== "" ? (
+                  <>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b" }}>Override: {formatSEK(Number(monthSchedule[curMonthKey + "_amount"]))}</span>
+                    <button onClick={() => setMonthSchedule(s => { const ns = { ...s }; delete ns[curMonthKey + "_amount"]; return ns; })}
+                      style={{ background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>✕ Ta bort</button>
+                  </>
+                ) : (
+                  <button onClick={() => {
+                    const val = prompt("Ange override-lön för denna månad (kr):", String(resolveMonthSalaryLocal(curMonthKey)));
+                    if (val != null && val !== "") setMonthSchedule(s => ({ ...s, [curMonthKey + "_amount"]: parseFloat(val) || 0 }));
+                  }}
+                    style={{ background: "#fef3c7", color: "#b45309", border: "1px solid #fde68a", borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                    ✏️ Override
+                  </button>
+                )}
+              </span>
             </div>
           )}
 
