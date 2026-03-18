@@ -833,7 +833,7 @@ export default function App() {
           {page === "debts" && <DebtsPage debts={debts} setDebts={setDebts} canEdit={canEdit} updateDebt={updateDebt} pushUndo={pushUndo} expenses={expenses} />}
           {page === "savings" && <SavingsPage savingsAccounts={savingsAccounts} setSavingsAccounts={setSavingsAccounts} assets={assets} setAssets={setAssets} canEdit={canEdit} pushUndo={pushUndo} />}
           {page === "goals" && <GoalsPage goals={goals} setGoals={setGoals} canEdit={canEdit} pushUndo={pushUndo} />}
-          {page === "forecast" && <ForecastPage income={income} expenses={expenses} debts={debts} extraIncome={extraIncome} beredskap={beredskap} futureSalaries={futureSalaries} plannedExpenses={plannedExpenses} monthSchedule={monthSchedule} appTexts={appTexts} />}
+          {page === "forecast" && <ForecastPage income={income} expenses={expenses} debts={debts} extraIncome={extraIncome} beredskap={beredskap} futureSalaries={futureSalaries} plannedExpenses={plannedExpenses} monthSchedule={monthSchedule} appTexts={appTexts} recurringExpenses={recurringExpenses} />}
           {page === "ai" && <AIPage messages={aiMessages} setMessages={setAiMessages} income={totalIncome} expenses={totalExpenses} debts={totalDebts} netWorth={netWorth} healthScore={healthScore} leftover={leftover} allDebts={debts} allExpenses={expenses} appTexts={appTexts} setPage={setPage} goals={goals} />}
           {page === "history" && <MonthlyHistoryPage monthlyHistory={monthlyHistory} setMonthlyHistory={setMonthlyHistory} expenses={expenses} setExpenses={setExpenses} totalIncome={totalIncome} totalExpenses={totalExpenses} leftover={leftover} debts={debts} pushUndo={pushUndo} />}
           {page === "profile" && <ProfilePage user={user} setUser={setUser} users={users} setUsers={setUsers} theme={theme} setTheme={setTheme} />}
@@ -1725,13 +1725,13 @@ function DashboardPage({ totalIncome, totalExpenses, leftover, totalDebts, netWo
                 </button>
               ))}
             </div>
-            {blickfangTab === "goals" && activeGoals.length > 1 && (
+            {blickfangTab === "goals" && activeGoals.length >= 1 && (
               <button onClick={() => setShowGoalPicker(v => !v)}
                 style={{ fontSize: 11, fontWeight: 700, color: "#3b82f6", background: "#dbeafe", border: "none", borderRadius: 99, padding: "4px 12px", cursor: "pointer", fontFamily: "inherit" }}>
                 Byt mål ▾
               </button>
             )}
-            {blickfangTab === "savings" && allSavings.length > 1 && (
+            {blickfangTab === "savings" && allSavings.length >= 1 && (
               <button onClick={() => setShowSavingsPicker(v => !v)}
                 style={{ fontSize: 11, fontWeight: 700, color: "#10b981", background: "#d1fae5", border: "none", borderRadius: 99, padding: "4px 12px", cursor: "pointer", fontFamily: "inherit" }}>
                 Byt konto ▾
@@ -1977,6 +1977,7 @@ function DashboardPage({ totalIncome, totalExpenses, leftover, totalDebts, netWo
 }
 
 
+
 // ============================================================
 // REUSABLE CALENDAR PICKER
 // ============================================================
@@ -2064,7 +2065,7 @@ const STATUS_STYLE  = {
   unpaid:   { dot: "#94a3b8", label: "Obetald",  rowBg: "transparent",          rowBgDark: "transparent",   textColor: "#94a3b8" },
 };
 
-function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDebts, plannedExpenses = [], setPlannedExpenses, categoryMeta: _catMeta, setCategoryMeta, pushUndo = () => {} }) {
+function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDebts, plannedExpenses = [], setPlannedExpenses, categoryMeta: _catMeta, setCategoryMeta, pushUndo = () => {}, recurringExpenses = [], setRecurringExpenses }) {
   const CATEGORY_META = _catMeta || {
     "Boende": { icon: "🏠", color: "#3b82f6" }, "Mat": { icon: "🛒", color: "#f59e0b" },
     "Transport": { icon: "🚌", color: "#06b6d4" }, "Försäkring": { icon: "🛡️", color: "#10b981" },
@@ -2085,6 +2086,8 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
     const d = new Date();
     return { year: d.getFullYear(), month: d.getMonth()+1, day: d.getDate(), hour: 9, minute: 0 };
   });
+  const [showAddRecurring, setShowAddRecurring] = useState(false);
+  const [newRec, setNewRec] = useState({ service: "", cost: "", category: "Övrigt", startDate: "" });
 
   const [editCat, setEditCat] = useState(null); // { name, icon, color, originalName }
   const dragRef = useRef({ dragId: null, dragOverId: null });
@@ -2295,6 +2298,7 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
         {[
           { id: "budget",  label: "💳 Budget" },
           { id: "planned", label: "🗓 Planerade", count: plannedExpenses.length },
+          { id: "recurring", label: "🔁 Sittande", count: recurringExpenses.length },
         ].map(t => (
           <button key={t.id} onClick={() => setBudgetTab(t.id)} style={{
             padding: "8px 20px", borderRadius: 10, border: "none", fontSize: 13, fontWeight: 700,
@@ -2518,6 +2522,141 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
             onMouseLeave={e => { e.currentTarget.style.borderColor="#8b5cf660"; e.currentTarget.style.background="var(--card)"; }}>
             <span style={{ fontSize: 20, lineHeight: 1 }}>+</span> Lägg till planerad kostnad
           </button>
+        )}
+      </>)}
+
+      {/* ══════════ SITTANDE / RECURRING TAB ══════════ */}
+      {budgetTab === "recurring" && (<>
+        <div style={{ background: "linear-gradient(135deg,#dbeafe,#bfdbfe)", borderRadius: 14, padding: "12px 16px", marginBottom: 20, display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <span style={{ fontSize: 18 }}>🔁</span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1e40af" }}>Sittande fakturor</div>
+            <div style={{ fontSize: 12, color: "#1d4ed8", marginTop: 2, lineHeight: 1.5 }}>Löpande kostnader som börjar från ett visst datum och räknas in varje månad framöver. T.ex. en ny prenumeration som startar mars – den påverkar alla lönemånader from startdatumet.</div>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+          {[
+            { label: "Antal sittande", value: `${recurringExpenses.length} st`, color: "#3b82f6" },
+            { label: "Total summa/mån", value: formatSEK(recurringExpenses.filter(r => !r.hidden).reduce((s, r) => s + r.cost, 0)), color: "#ef4444" },
+          ].map(s => (
+            <div key={s.label} style={{ background: "var(--card)", borderRadius: 16, padding: "16px 20px", border: "1px solid var(--border)" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{s.label}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+          {recurringExpenses.length === 0 && (
+            <div style={{ textAlign: "center", padding: "50px 0", color: "var(--text2)" }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>🔁</div>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>Inga sittande fakturor</div>
+              <div style={{ fontSize: 13, marginTop: 4 }}>Lägg till löpande kostnader som gäller from ett visst datum</div>
+            </div>
+          )}
+          {[...recurringExpenses].sort((a, b) => (a.startDate || "").localeCompare(b.startDate || "")).map(r => {
+            const salaryKey = r.startDate ? getSalaryMonthKeyForDate(r.startDate) : "";
+            const [sy, sm] = salaryKey ? salaryKey.split("-").map(Number) : [0, 0];
+            const salaryLabel = salaryKey ? new Date(sy, sm - 1, 1).toLocaleDateString("sv-SE", { month: "long", year: "numeric" }) : "–";
+            const meta = (CATEGORY_META || {})[r.category] || { icon: "📦", color: "#94a3b8" };
+            return (
+              <div key={r.id} style={{
+                background: r.hidden ? "var(--bg2)" : "var(--card)", borderRadius: 14, padding: "14px 18px",
+                border: `1px solid ${r.hidden ? "var(--border)" : meta.color + "44"}`,
+                display: "flex", alignItems: "center", gap: 12,
+                opacity: r.hidden ? 0.55 : 1, transition: "opacity 0.2s",
+              }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: meta.color + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{meta.icon}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", textDecoration: r.hidden ? "line-through" : "none" }}>{r.service}</div>
+                  <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span>📅 Från {r.startDate ? new Date(r.startDate).toLocaleDateString("sv-SE") : "–"}</span>
+                    <span style={{ color: meta.color, fontWeight: 600 }}>{r.category}</span>
+                  </div>
+                  <div style={{ marginTop: 4 }}>
+                    <span style={{ fontSize: 11, background: "#dbeafe", color: "#1d4ed8", borderRadius: 99, padding: "2px 8px", fontWeight: 600, textTransform: "capitalize" }}>💰 From {salaryLabel}</span>
+                  </div>
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#ef4444", flexShrink: 0 }}>{formatSEK(r.cost)}</div>
+                {canEdit && (
+                  <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                    <button onClick={() => setRecurringExpenses(rs => rs.map(x => x.id === r.id ? { ...x, hidden: !x.hidden } : x))}
+                      style={{ background: "none", border: "none", fontSize: 15, cursor: "pointer", color: r.hidden ? "#cbd5e1" : "var(--text2)", padding: "2px 4px" }}
+                      title={r.hidden ? "Visa" : "Dölj"}>
+                      {r.hidden ? "🙈" : "👁️"}
+                    </button>
+                    <button onClick={() => setRecurringExpenses(rs => rs.filter(x => x.id !== r.id))}
+                      style={{ background: "none", border: "none", fontSize: 16, cursor: "pointer", color: "#ef444480", padding: "2px 6px" }}>✕</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {canEdit && !showAddRecurring && (
+            <button onClick={() => setShowAddRecurring(true)}
+              style={{ width: "100%", background: "var(--card)", border: "2px dashed #3b82f660", borderRadius: 16, padding: "16px", fontSize: 14, fontWeight: 600, color: "#3b82f6", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor="#3b82f6"; e.currentTarget.style.background="#eff6ff"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor="#3b82f660"; e.currentTarget.style.background="var(--card)"; }}>
+              <span style={{ fontSize: 20, lineHeight: 1 }}>+</span> Lägg till sittande faktura
+            </button>
+        )}
+        {canEdit && showAddRecurring && (
+            <div style={{ background: "var(--card)", borderRadius: 16, padding: "20px", border: "2px solid #3b82f6" }}>
+              <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 16 }}>🔁 Ny sittande faktura</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>Namn</label>
+                  <input autoFocus placeholder="t.ex. Spotify, Gym..." value={newRec.service}
+                    onChange={e => setNewRec(n => ({ ...n, service: e.target.value }))}
+                    style={{ width: "100%", background: "var(--bg2)", border: "1.5px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 15, color: "var(--text)", fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>Kostnad (kr/mån)</label>
+                  <input type="number" placeholder="0" value={newRec.cost}
+                    onChange={e => setNewRec(n => ({ ...n, cost: e.target.value }))}
+                    style={{ width: "100%", background: "var(--bg2)", border: "1.5px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 15, color: "var(--text)", fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>Startdatum (from)</label>
+                  <input type="date" value={newRec.startDate}
+                    onChange={e => setNewRec(n => ({ ...n, startDate: e.target.value }))}
+                    style={{ width: "100%", background: "var(--bg2)", border: "1.5px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 14, color: "var(--text)", fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+                  {newRec.startDate && (() => {
+                    const sk = getSalaryMonthKeyForDate(newRec.startDate);
+                    const [sy2, sm2] = sk.split("-").map(Number);
+                    const label = new Date(sy2, sm2 - 1, 1).toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
+                    return <div style={{ fontSize: 11, color: "#1d4ed8", marginTop: 4 }}>💰 Räknas from <strong style={{ textTransform: "capitalize" }}>{label}</strong> löneperiod</div>;
+                  })()}
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 8 }}>Kategori</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {CATEGORIES.map(c => { const m = CATEGORY_META[c] || { icon: "📦", color: "#94a3b8" }; const sel = newRec.category === c; return (
+                      <button key={c} onClick={() => setNewRec(n => ({ ...n, category: c }))}
+                        style={{ padding: "6px 12px", borderRadius: 99, border: `1.5px solid ${sel ? m.color : "var(--border)"}`, background: sel ? m.color + "18" : "transparent", color: sel ? m.color : "var(--text2)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}>
+                        <span>{m.icon}</span>{c}
+                      </button>
+                    ); })}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                <button onClick={() => setShowAddRecurring(false)} className="btn btn-ghost" style={{ flex: 1, padding: "11px" }}>Avbryt</button>
+                <button onClick={() => {
+                  if (!newRec.service.trim() || !newRec.cost || !newRec.startDate) return;
+                  setRecurringExpenses(rs => [...rs, {
+                    id: Date.now(), service: newRec.service.trim(),
+                    cost: parseFloat(newRec.cost), category: newRec.category,
+                    startDate: newRec.startDate, hidden: false,
+                  }]);
+                  setNewRec({ service: "", cost: "", category: "Övrigt", startDate: "" });
+                  setShowAddRecurring(false);
+                }} style={{ flex: 2, padding: "11px", fontSize: 15, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Spara ＋</button>
+              </div>
+            </div>
         )}
       </>)}
 
@@ -2773,10 +2912,27 @@ function IncomePage({ income, setIncome, extraIncome, setExtraIncome, beredskap,
 
           {/* Base salary inline edit */}
           {currentSalary && canEdit && (
-            <div style={{ background: "var(--bg2)", borderRadius: 12, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10, border: "2px solid #10b981" }}>
+            <div style={{ background: "var(--bg2)", borderRadius: 12, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10, border: "2px solid #10b981", flexWrap: "wrap" }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: "#10b981", flexShrink: 0 }}>Grundlön (kr):</span>
               <InlineEdit value={currentSalary.amount} onChange={v => updateIncome(currentSalary.id, "amount", parseFloat(v) || 0)} />
-              <span style={{ fontSize: 11, color: "var(--text2)", marginLeft: "auto" }}>= Grundlön i schemat</span>
+              <span style={{ fontSize: 11, color: "var(--text2)" }}>= Grundlön i schemat</span>
+              <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+                {monthSchedule[curMonthKey + "_amount"] != null && monthSchedule[curMonthKey + "_amount"] !== "" ? (
+                  <>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b" }}>Override: {formatSEK(Number(monthSchedule[curMonthKey + "_amount"]))}</span>
+                    <button onClick={() => setMonthSchedule(s => { const ns = { ...s }; delete ns[curMonthKey + "_amount"]; return ns; })}
+                      style={{ background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>✕ Ta bort</button>
+                  </>
+                ) : (
+                  <button onClick={() => {
+                    const val = prompt("Ange override-lön för denna månad (kr):", String(resolveMonthSalaryLocal(curMonthKey)));
+                    if (val != null && val !== "") setMonthSchedule(s => ({ ...s, [curMonthKey + "_amount"]: parseFloat(val) || 0 }));
+                  }}
+                    style={{ background: "#fef3c7", color: "#b45309", border: "1px solid #fde68a", borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                    ✏️ Override
+                  </button>
+                )}
+              </span>
             </div>
           )}
 
@@ -4769,7 +4925,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
 // ============================================================
 // FORECAST PAGE
 // ============================================================
-function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureSalaries = [], plannedExpenses = [], monthSchedule = {}, appTexts = {} }) {
+function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureSalaries = [], plannedExpenses = [], monthSchedule = {}, appTexts = {}, recurringExpenses = [] }) {
   const months = 12;
   const rows = [];
   const baseSalary    = income.find(i => i.type === "salary")?.amount || 0;
@@ -4780,6 +4936,8 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
   const paidOffDebtIds = new Set(debts.filter(d => d.remaining <= 0).map(d => d.id));
 
   function salaryForMonth(monthKey) {
+    const override = monthSchedule[monthKey + "_amount"];
+    if (override != null && override !== "") return Number(override);
     const schedKey = monthSchedule[monthKey];
     if (schedKey) {
       const found = beredskapTypes.find(t => t.key === schedKey);
@@ -4810,14 +4968,18 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
     const beredskapBonus = beredskapTotal != null ? beredskapTotal - baseSalary : 0;
     const plannedItems = plannedExpenses.filter(p => {
       if (!p.dueDate) return false;
-      // Planned invoices before the 25th affect previous salary month
       return getSalaryMonthKeyForDate(p.dueDate) === monthKey;
     });
     const plannedCost = plannedItems.reduce((s, p) => s + p.cost, 0);
+    // Recurring expenses active for this month
+    const recurringCost = recurringExpenses.filter(r => {
+      if (r.hidden || !r.startDate) return false;
+      return getSalaryMonthKeyForDate(r.startDate) <= monthKey;
+    }).reduce((s, r) => s + r.cost, 0);
     const totalIn    = salary + baseOther + extra;
-    const leftover   = totalIn - monthExpenses - plannedCost;
+    const leftover   = totalIn - monthExpenses - plannedCost - recurringCost;
     const salaryChange = sortedFuture.find(fs => fs.fromMonth === monthKey);
-    rows.push({ label: monthLabel, income: totalIn, salary, expenses: monthExpenses, plannedCost, plannedItems, leftover, extra, extraItems, beredskapBonus, schedType, salaryChange, debtFreeings: debts.filter(d2 => calcDebtPayoff(d2.remaining, d2.monthly).months === i) });
+    rows.push({ label: monthLabel, income: totalIn, salary, expenses: monthExpenses, plannedCost, plannedItems, recurringCost, leftover, extra, extraItems, beredskapBonus, schedType, salaryChange, debtFreeings: debts.filter(d2 => calcDebtPayoff(d2.remaining, d2.monthly).months === i) });
   }
 
   return (
@@ -4831,6 +4993,7 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
               <th>Månad</th>
               <th>Inkomst</th>
               <th>Fasta utgifter</th>
+              <th>Sittande</th>
               <th>Planerade</th>
               <th>Kvar</th>
               <th>Noteringar</th>
@@ -4842,6 +5005,7 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
                 <td style={{ textTransform: "capitalize", fontWeight: 600 }}>{row.label}</td>
                 <td style={{ color: "#10b981", fontWeight: 700 }}>{formatSEK(row.income)}</td>
                 <td style={{ color: "#ef4444" }}>{formatSEK(row.expenses)}</td>
+                <td style={{ color: row.recurringCost > 0 ? "#3b82f6" : "var(--text2)", fontWeight: row.recurringCost > 0 ? 700 : 400 }}>{row.recurringCost > 0 ? formatSEK(row.recurringCost) : "–"}</td>
                 <td style={{ color: row.plannedCost > 0 ? "#8b5cf6" : "var(--text2)", fontWeight: row.plannedCost > 0 ? 700 : 400 }}>{row.plannedCost > 0 ? formatSEK(row.plannedCost) : "–"}</td>
                 <td style={{ fontWeight: 800, color: row.leftover >= 0 ? "#10b981" : "#ef4444" }}>{formatSEK(row.leftover)}</td>
                 <td style={{ fontSize: 12 }}>
