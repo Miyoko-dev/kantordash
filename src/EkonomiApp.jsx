@@ -2086,6 +2086,8 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
     const d = new Date();
     return { year: d.getFullYear(), month: d.getMonth()+1, day: d.getDate(), hour: 9, minute: 0 };
   });
+  const [showAddRecurring, setShowAddRecurring] = useState(false);
+  const [newRec, setNewRec] = useState({ service: "", cost: "", category: "Övrigt", startDate: "" });
 
   const [editCat, setEditCat] = useState(null); // { name, icon, color, originalName }
   const dragRef = useRef({ dragId: null, dragOverId: null });
