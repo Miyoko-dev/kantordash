@@ -2595,19 +2595,15 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
           })}
         </div>
 
-        {canEdit && (() => {
-          const [showAddRecurring, setShowAddRecurring] = useState(false);
-          const [newRec, setNewRec] = useState({ service: "", cost: "", category: "Övrigt", startDate: "" });
-          const CATEGORIES_LIST = Object.keys(CATEGORY_META);
-          if (!showAddRecurring) return (
+        {canEdit && !showAddRecurring && (
             <button onClick={() => setShowAddRecurring(true)}
               style={{ width: "100%", background: "var(--card)", border: "2px dashed #3b82f660", borderRadius: 16, padding: "16px", fontSize: 14, fontWeight: 600, color: "#3b82f6", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 0.15s" }}
               onMouseEnter={e => { e.currentTarget.style.borderColor="#3b82f6"; e.currentTarget.style.background="#eff6ff"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor="#3b82f660"; e.currentTarget.style.background="var(--card)"; }}>
               <span style={{ fontSize: 20, lineHeight: 1 }}>+</span> Lägg till sittande faktura
             </button>
-          );
-          return (
+        )}
+        {canEdit && showAddRecurring && (
             <div style={{ background: "var(--card)", borderRadius: 16, padding: "20px", border: "2px solid #3b82f6" }}>
               <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 16 }}>🔁 Ny sittande faktura</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -2638,7 +2634,7 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
                 <div>
                   <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 8 }}>Kategori</label>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {CATEGORIES_LIST.map(c => { const m = CATEGORY_META[c] || { icon: "📦", color: "#94a3b8" }; const sel = newRec.category === c; return (
+                    {CATEGORIES.map(c => { const m = CATEGORY_META[c] || { icon: "📦", color: "#94a3b8" }; const sel = newRec.category === c; return (
                       <button key={c} onClick={() => setNewRec(n => ({ ...n, category: c }))}
                         style={{ padding: "6px 12px", borderRadius: 99, border: `1.5px solid ${sel ? m.color : "var(--border)"}`, background: sel ? m.color + "18" : "transparent", color: sel ? m.color : "var(--text2)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}>
                         <span>{m.icon}</span>{c}
@@ -2661,8 +2657,7 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
                 }} style={{ flex: 2, padding: "11px", fontSize: 15, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Spara ＋</button>
               </div>
             </div>
-          );
-        })()}
+        )}
       </>)}
 
       {/* ══════════ MODAL: Ny budget-post ══════════ */}
