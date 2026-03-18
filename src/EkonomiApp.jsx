@@ -4993,6 +4993,7 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
               <th>Månad</th>
               <th>Inkomst</th>
               <th>Fasta utgifter</th>
+              <th>Sittande</th>
               <th>Planerade</th>
               <th>Kvar</th>
               <th>Noteringar</th>
