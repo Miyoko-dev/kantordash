@@ -1975,8 +1975,8 @@ function DashboardPage({ totalIncome, totalExpenses, leftover, totalDebts, netWo
     </div>
   );
 }
-  const [showAddRecurring, setShowAddRecurring] = useState(false);
-  const [newRec, setNewRec] = useState({ service: "", cost: "", category: "Övrigt", startDate: "" });
+
+
 
 // ============================================================
 // REUSABLE CALENDAR PICKER
