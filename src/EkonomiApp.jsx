@@ -1725,13 +1725,13 @@ function DashboardPage({ totalIncome, totalExpenses, leftover, totalDebts, netWo
                 </button>
               ))}
             </div>
-            {blickfangTab === "goals" && activeGoals.length > 1 && (
+            {blickfangTab === "goals" && activeGoals.length >= 1 && (
               <button onClick={() => setShowGoalPicker(v => !v)}
                 style={{ fontSize: 11, fontWeight: 700, color: "#3b82f6", background: "#dbeafe", border: "none", borderRadius: 99, padding: "4px 12px", cursor: "pointer", fontFamily: "inherit" }}>
                 Byt mål ▾
               </button>
             )}
-            {blickfangTab === "savings" && allSavings.length > 1 && (
+            {blickfangTab === "savings" && allSavings.length >= 1 && (
               <button onClick={() => setShowSavingsPicker(v => !v)}
                 style={{ fontSize: 11, fontWeight: 700, color: "#10b981", background: "#d1fae5", border: "none", borderRadius: 99, padding: "4px 12px", cursor: "pointer", fontFamily: "inherit" }}>
                 Byt konto ▾
