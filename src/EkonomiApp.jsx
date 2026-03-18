@@ -2522,6 +2522,146 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
         )}
       </>)}
 
+      {/* ══════════ SITTANDE / RECURRING TAB ══════════ */}
+      {budgetTab === "recurring" && (<>
+        <div style={{ background: "linear-gradient(135deg,#dbeafe,#bfdbfe)", borderRadius: 14, padding: "12px 16px", marginBottom: 20, display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <span style={{ fontSize: 18 }}>🔁</span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1e40af" }}>Sittande fakturor</div>
+            <div style={{ fontSize: 12, color: "#1d4ed8", marginTop: 2, lineHeight: 1.5 }}>Löpande kostnader som börjar från ett visst datum och räknas in varje månad framöver. T.ex. en ny prenumeration som startar mars – den påverkar alla lönemånader from startdatumet.</div>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+          {[
+            { label: "Antal sittande", value: `${recurringExpenses.length} st`, color: "#3b82f6" },
+            { label: "Total summa/mån", value: formatSEK(recurringExpenses.filter(r => !r.hidden).reduce((s, r) => s + r.cost, 0)), color: "#ef4444" },
+          ].map(s => (
+            <div key={s.label} style={{ background: "var(--card)", borderRadius: 16, padding: "16px 20px", border: "1px solid var(--border)" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{s.label}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+          {recurringExpenses.length === 0 && (
+            <div style={{ textAlign: "center", padding: "50px 0", color: "var(--text2)" }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>🔁</div>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>Inga sittande fakturor</div>
+              <div style={{ fontSize: 13, marginTop: 4 }}>Lägg till löpande kostnader som gäller from ett visst datum</div>
+            </div>
+          )}
+          {[...recurringExpenses].sort((a, b) => (a.startDate || "").localeCompare(b.startDate || "")).map(r => {
+            const salaryKey = r.startDate ? getSalaryMonthKeyForDate(r.startDate) : "";
+            const [sy, sm] = salaryKey ? salaryKey.split("-").map(Number) : [0, 0];
+            const salaryLabel = salaryKey ? new Date(sy, sm - 1, 1).toLocaleDateString("sv-SE", { month: "long", year: "numeric" }) : "–";
+            const meta = (CATEGORY_META || {})[r.category] || { icon: "📦", color: "#94a3b8" };
+            return (
+              <div key={r.id} style={{
+                background: r.hidden ? "var(--bg2)" : "var(--card)", borderRadius: 14, padding: "14px 18px",
+                border: `1px solid ${r.hidden ? "var(--border)" : meta.color + "44"}`,
+                display: "flex", alignItems: "center", gap: 12,
+                opacity: r.hidden ? 0.55 : 1, transition: "opacity 0.2s",
+              }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: meta.color + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{meta.icon}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", textDecoration: r.hidden ? "line-through" : "none" }}>{r.service}</div>
+                  <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span>📅 Från {r.startDate ? new Date(r.startDate).toLocaleDateString("sv-SE") : "–"}</span>
+                    <span style={{ color: meta.color, fontWeight: 600 }}>{r.category}</span>
+                  </div>
+                  <div style={{ marginTop: 4 }}>
+                    <span style={{ fontSize: 11, background: "#dbeafe", color: "#1d4ed8", borderRadius: 99, padding: "2px 8px", fontWeight: 600, textTransform: "capitalize" }}>💰 From {salaryLabel}</span>
+                  </div>
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#ef4444", flexShrink: 0 }}>{formatSEK(r.cost)}</div>
+                {canEdit && (
+                  <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                    <button onClick={() => setRecurringExpenses(rs => rs.map(x => x.id === r.id ? { ...x, hidden: !x.hidden } : x))}
+                      style={{ background: "none", border: "none", fontSize: 15, cursor: "pointer", color: r.hidden ? "#cbd5e1" : "var(--text2)", padding: "2px 4px" }}
+                      title={r.hidden ? "Visa" : "Dölj"}>
+                      {r.hidden ? "🙈" : "👁️"}
+                    </button>
+                    <button onClick={() => setRecurringExpenses(rs => rs.filter(x => x.id !== r.id))}
+                      style={{ background: "none", border: "none", fontSize: 16, cursor: "pointer", color: "#ef444480", padding: "2px 6px" }}>✕</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {canEdit && (() => {
+          const [showAddRecurring, setShowAddRecurring] = useState(false);
+          const [newRec, setNewRec] = useState({ service: "", cost: "", category: "Övrigt", startDate: "" });
+          const CATEGORIES_LIST = Object.keys(CATEGORY_META);
+          if (!showAddRecurring) return (
+            <button onClick={() => setShowAddRecurring(true)}
+              style={{ width: "100%", background: "var(--card)", border: "2px dashed #3b82f660", borderRadius: 16, padding: "16px", fontSize: 14, fontWeight: 600, color: "#3b82f6", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor="#3b82f6"; e.currentTarget.style.background="#eff6ff"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor="#3b82f660"; e.currentTarget.style.background="var(--card)"; }}>
+              <span style={{ fontSize: 20, lineHeight: 1 }}>+</span> Lägg till sittande faktura
+            </button>
+          );
+          return (
+            <div style={{ background: "var(--card)", borderRadius: 16, padding: "20px", border: "2px solid #3b82f6" }}>
+              <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 16 }}>🔁 Ny sittande faktura</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>Namn</label>
+                  <input autoFocus placeholder="t.ex. Spotify, Gym..." value={newRec.service}
+                    onChange={e => setNewRec(n => ({ ...n, service: e.target.value }))}
+                    style={{ width: "100%", background: "var(--bg2)", border: "1.5px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 15, color: "var(--text)", fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>Kostnad (kr/mån)</label>
+                  <input type="number" placeholder="0" value={newRec.cost}
+                    onChange={e => setNewRec(n => ({ ...n, cost: e.target.value }))}
+                    style={{ width: "100%", background: "var(--bg2)", border: "1.5px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 15, color: "var(--text)", fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>Startdatum (from)</label>
+                  <input type="date" value={newRec.startDate}
+                    onChange={e => setNewRec(n => ({ ...n, startDate: e.target.value }))}
+                    style={{ width: "100%", background: "var(--bg2)", border: "1.5px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 14, color: "var(--text)", fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+                  {newRec.startDate && (() => {
+                    const sk = getSalaryMonthKeyForDate(newRec.startDate);
+                    const [sy2, sm2] = sk.split("-").map(Number);
+                    const label = new Date(sy2, sm2 - 1, 1).toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
+                    return <div style={{ fontSize: 11, color: "#1d4ed8", marginTop: 4 }}>💰 Räknas from <strong style={{ textTransform: "capitalize" }}>{label}</strong> löneperiod</div>;
+                  })()}
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 8 }}>Kategori</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {CATEGORIES_LIST.map(c => { const m = CATEGORY_META[c] || { icon: "📦", color: "#94a3b8" }; const sel = newRec.category === c; return (
+                      <button key={c} onClick={() => setNewRec(n => ({ ...n, category: c }))}
+                        style={{ padding: "6px 12px", borderRadius: 99, border: `1.5px solid ${sel ? m.color : "var(--border)"}`, background: sel ? m.color + "18" : "transparent", color: sel ? m.color : "var(--text2)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}>
+                        <span>{m.icon}</span>{c}
+                      </button>
+                    ); })}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                <button onClick={() => setShowAddRecurring(false)} className="btn btn-ghost" style={{ flex: 1, padding: "11px" }}>Avbryt</button>
+                <button onClick={() => {
+                  if (!newRec.service.trim() || !newRec.cost || !newRec.startDate) return;
+                  setRecurringExpenses(rs => [...rs, {
+                    id: Date.now(), service: newRec.service.trim(),
+                    cost: parseFloat(newRec.cost), category: newRec.category,
+                    startDate: newRec.startDate, hidden: false,
+                  }]);
+                  setNewRec({ service: "", cost: "", category: "Övrigt", startDate: "" });
+                  setShowAddRecurring(false);
+                }} style={{ flex: 2, padding: "11px", fontSize: 15, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Spara ＋</button>
+              </div>
+            </div>
+          );
+        })()}
+      </>)}
+
       {/* ══════════ MODAL: Ny budget-post ══════════ */}
       {showAdd && (
         <div className="modal-overlay" onClick={() => setShowAdd(false)}>
