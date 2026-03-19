@@ -4962,6 +4962,343 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
 }
 
 // ============================================================
+// PURCHASES PAGE (Köp)
+// ============================================================
+const PURCHASE_COLORS = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ef4444", "#ec4899", "#14b8a6", "#f97316"];
+const PURCHASE_ICONS = ["🛒", "🖥", "📱", "🎮", "🚗", "🏠", "👟", "🎁", "🔧", "🎵", "📚", "✈️", "🍕", "💻", "⌚"];
+const PURCHASE_CATEGORIES = ["Teknik", "Hem", "Fordon", "Nöje", "Kläder", "Hälsa", "Övrigt"];
+
+function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {} }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [editPurchase, setEditPurchase] = useState(null);
+  const [newPurchase, setNewPurchase] = useState({ name: "", description: "", cost: "", month: "", color: "#3b82f6", icon: "🛒", category: "Övrigt", notes: "", image: null, imageOffsetY: 50 });
+
+  const totalCost = purchases.reduce((s, p) => s + (p.cost || 0), 0);
+  const planned = purchases.filter(p => !p.purchased);
+  const done = purchases.filter(p => p.purchased);
+
+  function addPurchase() {
+    if (!newPurchase.name || !newPurchase.cost) return;
+    setPurchases(ps => [...ps, {
+      ...newPurchase, id: Date.now(),
+      cost: parseFloat(newPurchase.cost) || 0,
+      purchased: false,
+    }]);
+    setNewPurchase({ name: "", description: "", cost: "", month: "", color: "#3b82f6", icon: "🛒", category: "Övrigt", notes: "", image: null, imageOffsetY: 50 });
+    setShowAdd(false);
+  }
+
+  function deletePurchase(id) {
+    pushUndo("Köp");
+    setPurchases(ps => ps.filter(p => p.id !== id));
+  }
+
+  function togglePurchased(id) {
+    pushUndo("Köp");
+    setPurchases(ps => ps.map(p => p.id === id ? { ...p, purchased: !p.purchased } : p));
+  }
+
+  const iStyle = { width: "100%", boxSizing: "border-box", background: "var(--bg2)", border: "1.5px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 14, color: "var(--text)", fontFamily: "inherit", outline: "none" };
+  const lStyle = { fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 5 };
+
+  // Generate next 12 months for picker
+  const monthOptions = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(); d.setMonth(d.getMonth() + i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
+    return { key, label };
+  });
+
+  return (
+    <div className="fadeIn">
+      {/* Edit modal */}
+      {editPurchase && (() => {
+        const col = editPurchase.color || "#3b82f6";
+        return (
+          <div className="modal-overlay" onClick={() => setEditPurchase(null)}>
+            <div onClick={e => e.stopPropagation()} style={{
+              background: "var(--card)", borderRadius: 24, width: "min(520px, 96vw)",
+              maxHeight: "88vh", display: "flex", flexDirection: "column",
+              boxShadow: "0 32px 80px rgba(0,0,0,0.22)", overflow: "hidden"
+            }}>
+              <div style={{ background: `linear-gradient(135deg, ${col}dd, ${col}88)`, padding: "22px 28px 18px", flexShrink: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(255,255,255,0.25)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, border: "2px solid rgba(255,255,255,0.4)" }}>
+                      {editPurchase.icon}
+                    </div>
+                    <div>
+                      <input value={editPurchase.name} onChange={e => setEditPurchase(p => ({ ...p, name: e.target.value }))}
+                        placeholder="Köpnamn…"
+                        style={{ background: "transparent", border: "none", outline: "none", fontSize: 20, fontWeight: 800, color: "#fff", fontFamily: "inherit", width: "100%" }} />
+                      <input value={editPurchase.description ?? ""} onChange={e => setEditPurchase(p => ({ ...p, description: e.target.value }))}
+                        placeholder="Kort beskrivning…"
+                        style={{ background: "transparent", border: "none", outline: "none", fontSize: 13, color: "rgba(255,255,255,0.75)", fontFamily: "inherit", width: "100%", marginTop: 2 }} />
+                    </div>
+                  </div>
+                  <button onClick={() => setEditPurchase(null)} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: 8, width: 30, height: 30, cursor: "pointer", color: "#fff", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✕</button>
+                </div>
+                <div style={{ display: "flex", gap: 7, marginTop: 14 }}>
+                  {PURCHASE_COLORS.map(c => (
+                    <button key={c} onClick={() => setEditPurchase(p => ({ ...p, color: c }))}
+                      style={{ width: editPurchase.color === c ? 26 : 20, height: editPurchase.color === c ? 26 : 20, borderRadius: "50%", background: c, border: `3px solid ${editPurchase.color === c ? "#fff" : "transparent"}`, cursor: "pointer", transition: "all 0.15s", flexShrink: 0 }} />
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ padding: "22px 28px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div>
+                    <label style={lStyle}>Kostnad (kr) *</label>
+                    <input type="number" value={editPurchase.cost ?? ""} onChange={e => setEditPurchase(p => ({ ...p, cost: e.target.value }))} style={iStyle} placeholder="0" />
+                  </div>
+                  <div>
+                    <label style={lStyle}>Planerad månad</label>
+                    <select value={editPurchase.month || ""} onChange={e => setEditPurchase(p => ({ ...p, month: e.target.value }))}
+                      style={{ ...iStyle, appearance: "none", cursor: "pointer" }}>
+                      <option value="">Ej bestämd</option>
+                      {monthOptions.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={lStyle}>Kategori</label>
+                    <select value={editPurchase.category || "Övrigt"} onChange={e => setEditPurchase(p => ({ ...p, category: e.target.value }))}
+                      style={{ ...iStyle, appearance: "none", cursor: "pointer" }}>
+                      {PURCHASE_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label style={lStyle}>Anteckningar</label>
+                  <textarea value={editPurchase.notes ?? ""} onChange={e => setEditPurchase(p => ({ ...p, notes: e.target.value }))}
+                    placeholder="Detaljer, länkar, etc." rows={3} style={{ ...iStyle, resize: "vertical", lineHeight: 1.6 }} />
+                </div>
+                {/* Icon picker */}
+                <div>
+                  <label style={lStyle}>Välj ikon</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {PURCHASE_ICONS.map(icon => (
+                      <button key={icon} onClick={() => setEditPurchase(p => ({ ...p, icon }))}
+                        style={{ width: 38, height: 38, borderRadius: 10, border: `2px solid ${editPurchase.icon === icon ? col : "transparent"}`, background: editPurchase.icon === icon ? col + "20" : "var(--card)", fontSize: 20, cursor: "pointer" }}>{icon}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ padding: "16px 28px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, flexShrink: 0, background: "var(--card)" }}>
+                <button onClick={() => {
+                  pushUndo("Köp");
+                  setPurchases(ps => ps.map(p => p.id === editPurchase.id ? { ...p, ...editPurchase, cost: parseFloat(editPurchase.cost) || p.cost } : p));
+                  setEditPurchase(null);
+                }} style={{ flex: 1, background: col, color: "#fff", border: "none", borderRadius: 12, padding: "12px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  ✓ Spara ändringar
+                </button>
+                <button onClick={() => setEditPurchase(null)}
+                  style={{ background: "var(--bg2)", border: "none", borderRadius: 12, padding: "12px 20px", fontSize: 14, cursor: "pointer", fontFamily: "inherit", color: "var(--text)" }}>
+                  Avbryt
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Summary header */}
+      <div style={{ background: "linear-gradient(135deg, #0369a1, #38bdf8)", borderRadius: 20, padding: "24px 32px", marginBottom: 24, color: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div style={{ fontSize: 13, opacity: 0.75, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Planerade köp</div>
+          <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: "-0.03em", marginTop: 4 }}>{formatSEK(totalCost)}</div>
+          <div style={{ fontSize: 14, opacity: 0.8, marginTop: 4 }}>{planned.length} planerade · {done.length} köpta</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ display: "flex", gap: 12 }}>
+            <span style={{ background: "rgba(255,255,255,0.15)", borderRadius: 99, padding: "3px 12px", fontSize: 12 }}>📋 {planned.length} kvar</span>
+            <span style={{ background: "rgba(255,255,255,0.15)", borderRadius: 99, padding: "3px 12px", fontSize: 12 }}>✅ {done.length} klara</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Add button */}
+      {canEdit && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+          <button onClick={() => setShowAdd(true)} className="btn btn-primary">+ Nytt köp</button>
+        </div>
+      )}
+
+      {/* Create purchase modal */}
+      {showAdd && (
+        <div className="modal-overlay" onClick={() => setShowAdd(false)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: "var(--card)", borderRadius: 24, width: "min(520px, 96vw)",
+            maxHeight: "88vh", display: "flex", flexDirection: "column",
+            boxShadow: "0 32px 80px rgba(0,0,0,0.22)", overflow: "hidden"
+          }}>
+            <div style={{ background: `linear-gradient(135deg, ${newPurchase.color}dd, ${newPurchase.color}88)`, padding: "22px 28px 18px", flexShrink: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(255,255,255,0.25)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, border: "2px solid rgba(255,255,255,0.4)" }}>
+                    {newPurchase.icon}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "#fff" }}>{newPurchase.name || "Nytt köp"}</div>
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", marginTop: 2 }}>{newPurchase.description || "Beskriv ditt köp…"}</div>
+                  </div>
+                </div>
+                <button onClick={() => setShowAdd(false)} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: 8, width: 30, height: 30, cursor: "pointer", color: "#fff", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              </div>
+              <div style={{ display: "flex", gap: 7, marginTop: 14 }}>
+                {PURCHASE_COLORS.map(c => (
+                  <button key={c} onClick={() => setNewPurchase(n => ({ ...n, color: c }))}
+                    style={{ width: newPurchase.color === c ? 26 : 20, height: newPurchase.color === c ? 26 : 20, borderRadius: "50%", background: c, border: `3px solid ${newPurchase.color === c ? "#fff" : "transparent"}`, cursor: "pointer", transition: "all 0.15s", flexShrink: 0 }} />
+                ))}
+              </div>
+            </div>
+
+            <div style={{ padding: "22px 28px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 18 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div style={{ gridColumn: "1/-1" }}>
+                  <label style={lStyle}>Namn *</label>
+                  <input value={newPurchase.name} onChange={e => setNewPurchase(n => ({ ...n, name: e.target.value }))} placeholder="t.ex. Ny TV, Vinterdäck…" style={iStyle} />
+                </div>
+                <div style={{ gridColumn: "1/-1" }}>
+                  <label style={lStyle}>Beskrivning</label>
+                  <input value={newPurchase.description} onChange={e => setNewPurchase(n => ({ ...n, description: e.target.value }))} placeholder="Vad handlar det om?" style={iStyle} />
+                </div>
+                <div>
+                  <label style={lStyle}>Kostnad (kr) *</label>
+                  <input type="number" value={newPurchase.cost} onChange={e => setNewPurchase(n => ({ ...n, cost: e.target.value }))} placeholder="0" style={iStyle} />
+                </div>
+                <div>
+                  <label style={lStyle}>Planerad månad</label>
+                  <select value={newPurchase.month} onChange={e => setNewPurchase(n => ({ ...n, month: e.target.value }))}
+                    style={{ ...iStyle, appearance: "none", cursor: "pointer" }}>
+                    <option value="">Ej bestämd</option>
+                    {monthOptions.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={lStyle}>Kategori</label>
+                  <select value={newPurchase.category} onChange={e => setNewPurchase(n => ({ ...n, category: e.target.value }))}
+                    style={{ ...iStyle, appearance: "none", cursor: "pointer" }}>
+                    {PURCHASE_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+              {/* Icon picker */}
+              <div>
+                <label style={lStyle}>Välj ikon</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {PURCHASE_ICONS.map(icon => (
+                    <button key={icon} onClick={() => setNewPurchase(n => ({ ...n, icon }))}
+                      style={{ width: 42, height: 42, borderRadius: 12, border: `2px solid ${newPurchase.icon === icon ? newPurchase.color : "var(--border)"}`, background: newPurchase.icon === icon ? newPurchase.color + "20" : "var(--bg2)", fontSize: 20, cursor: "pointer", transition: "all 0.15s" }}>{icon}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: "16px 28px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, flexShrink: 0 }}>
+              <button onClick={() => setShowAdd(false)} style={{ background: "var(--bg2)", border: "none", borderRadius: 12, padding: "12px 20px", fontSize: 14, cursor: "pointer", fontFamily: "inherit", color: "var(--text)" }}>Avbryt</button>
+              <button onClick={addPurchase} style={{ flex: 1, background: newPurchase.color, color: "#fff", border: "none", borderRadius: 12, padding: "12px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>✓ Skapa köp</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Planned purchases */}
+      {planned.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>📋 Planerade köp</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))", gap: 16 }}>
+            {planned.map(purchase => {
+              const col = purchase.color || "#3b82f6";
+              const monthLabel = purchase.month ? (() => {
+                const [y, m] = purchase.month.split("-");
+                const d = new Date(+y, +m - 1, 1);
+                return d.toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
+              })() : null;
+              return (
+                <Card key={purchase.id} style={{ position: "relative", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: col }} />
+                  <div style={{ paddingTop: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 13, background: col + "20", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 21, flexShrink: 0 }}>{purchase.icon}</div>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 800 }}>{purchase.name}</div>
+                          {purchase.description && <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 1 }}>{purchase.description}</div>}
+                          <div style={{ display: "flex", gap: 5, marginTop: 3, alignItems: "center" }}>
+                            <span style={{ fontSize: 11, background: col + "20", color: col, borderRadius: 99, padding: "1px 8px", fontWeight: 700 }}>{purchase.category}</span>
+                            {monthLabel && <span style={{ fontSize: 11, background: "#dbeafe", color: "#1d4ed8", borderRadius: 99, padding: "1px 8px", fontWeight: 700 }}>📅 {monthLabel}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      {canEdit && (
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={() => togglePurchased(purchase.id)} title="Markera köpt" style={{ background: "none", border: "none", color: "#10b981", cursor: "pointer", fontSize: 14, opacity: 0.7, padding: 0 }}>✅</button>
+                          <button onClick={() => setEditPurchase({ ...purchase })} style={{ background: "none", border: "none", color: "var(--text2)", cursor: "pointer", fontSize: 14, opacity: 0.6, padding: 0 }}>✏️</button>
+                          <button onClick={() => deletePurchase(purchase.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 14, opacity: 0.4, padding: 0 }}>✕</button>
+                        </div>
+                      )}
+                    </div>
+                    {/* Cost display */}
+                    <div style={{ background: col + "10", border: `1px solid ${col}30`, borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 13, color: "var(--text2)", fontWeight: 600 }}>Kostnad</span>
+                      <span style={{ fontSize: 22, fontWeight: 800, color: col }}>{formatSEK(purchase.cost)}</span>
+                    </div>
+                    {purchase.notes && (
+                      <div style={{ marginTop: 10, fontSize: 12, color: "var(--text2)", lineHeight: 1.6, background: "var(--bg2)", borderRadius: 10, padding: "8px 12px" }}>{purchase.notes}</div>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Completed purchases */}
+      {done.length > 0 && (
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>✅ Köpta</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))", gap: 12 }}>
+            {done.map(purchase => {
+              const col = purchase.color || "#3b82f6";
+              return (
+                <Card key={purchase.id} style={{ opacity: 0.7 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: col + "20", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{purchase.icon}</div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, textDecoration: "line-through" }}>{purchase.name}</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: col }}>{formatSEK(purchase.cost)}</div>
+                      </div>
+                    </div>
+                    {canEdit && (
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button onClick={() => togglePurchased(purchase.id)} title="Återaktivera" style={{ background: "none", border: "none", color: "#f59e0b", cursor: "pointer", fontSize: 14, opacity: 0.7, padding: 0 }}>↩️</button>
+                        <button onClick={() => deletePurchase(purchase.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 14, opacity: 0.4, padding: 0 }}>✕</button>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {purchases.length === 0 && (
+        <div style={{ textAlign: "center", padding: "48px 0", color: "var(--text2)" }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🛒</div>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Inga köp ännu</div>
+          <div style={{ fontSize: 14 }}>Klicka på + Nytt köp för att komma igång!</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
 // FORECAST PAGE
 // ============================================================
 function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureSalaries = [], plannedExpenses = [], monthSchedule = {}, appTexts = {}, recurringExpenses = [] }) {
