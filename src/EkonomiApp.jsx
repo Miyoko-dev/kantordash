@@ -5032,7 +5032,12 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
     const totalIn    = salary + baseOther + extra;
     const leftover   = totalIn - monthExpenses - plannedCost - recurringCost;
     const salaryChange = sortedFuture.find(fs => fs.fromMonth === monthKey);
-    rows.push({ label: monthLabel, income: totalIn, salary, expenses: monthExpenses, plannedCost, plannedItems, recurringCost, leftover, extra, extraItems, beredskapBonus, schedType, salaryChange, debtFreeings: debts.filter(d2 => calcDebtPayoff(d2.remaining, d2.monthly).months === i) });
+    // debtFreeings: debts whose linked expenses become free this month
+    const allDebtFreeings = [...debtFreedThisMonth, ...debts.filter(d2 => {
+      const pm = debtPayoffMonth[d2.id];
+      return pm === i && !debtFreedThisMonth.find(x => x.id === d2.id);
+    })];
+    rows.push({ label: monthLabel, monthKey, income: totalIn, salary, expenses: monthExpenses, plannedCost, plannedItems, recurringCost, leftover, extra, extraItems, beredskapBonus, schedType, salaryChange, debtFreeings: allDebtFreeings, skippedExpenses });
   }
 
   return (
