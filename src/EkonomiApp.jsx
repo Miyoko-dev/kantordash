@@ -4965,7 +4965,11 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
   const now           = new Date();
   const sortedFuture  = [...futureSalaries].sort((a, b) => a.fromMonth.localeCompare(b.fromMonth));
   const beredskapTypes = appTexts.beredskapTypes || [];
-  const paidOffDebtIds = new Set(debts.filter(d => d.remaining <= 0).map(d => d.id));
+  // Pre-compute payoff month index for each debt (how many months from now until paid off)
+  const debtPayoffMonth = {};
+  debts.forEach(d => {
+    debtPayoffMonth[d.id] = d.remaining <= 0 ? -1 : calcDebtPayoff(d.remaining, d.monthly).months;
+  });
 
   function salaryForMonth(monthKey) {
     const override = monthSchedule[monthKey + "_amount"];
@@ -4984,13 +4988,30 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
     const monthLabel = d.toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
     const salary     = salaryForMonth(monthKey);
     const activeDebts = debts.filter(d2 => calcDebtPayoff(d2.remaining, d2.monthly).months > i);
-    // Skip expenses linked to paid-off debts (freed up money), temporary for future months, and hidden
+    // Debts that get paid off exactly at month i
+    const debtFreedThisMonth = [];
+    // Skip expenses linked to paid-off debts, temporary for future months, hidden, and skipped months
     const monthExpenses = expenses.reduce((s, e) => {
       if (e.hidden) return s;
-      if (e.debtLink && paidOffDebtIds.has(e.debtLink)) return s;
+      // Skip if this expense is paused in this month
+      if (e.skipMonths && e.skipMonths.includes(monthKey)) return s;
+      // Debt-linked: check if debt is already paid off by this month
+      if (e.debtLink) {
+        const payoff = debtPayoffMonth[e.debtLink];
+        if (payoff != null && payoff <= i) {
+          // Debt paid off by or before this month — don't count expense
+          if (payoff === i && !debtFreedThisMonth.find(x => x.id === e.debtLink)) {
+            const debt = debts.find(dd => dd.id === e.debtLink);
+            if (debt) debtFreedThisMonth.push(debt);
+          }
+          return s;
+        }
+      }
       if (e.temporary && i > 0) return s;
       return s + e.cost;
     }, 0);
+    // Collect expenses that are skipped this month for notation
+    const skippedExpenses = expenses.filter(e => !e.hidden && e.skipMonths && e.skipMonths.includes(monthKey));
     const extraItems = extraIncome.filter(e => e.month === monthKey);
     const extra      = extraItems.reduce((s, e) => s + e.amount, 0);
     const schedKey   = monthSchedule[monthKey] || null;
