@@ -624,6 +624,7 @@ export default function App() {
   const paidOffDebtIds = new Set(debts.filter(d => d.remaining <= 0).map(d => d.id));
   const totalExpenses = expenses.reduce((s, e) => {
     if (e.hidden) return s;
+    if (e.skipMonths && e.skipMonths.includes(currentMonthKey)) return s;
     if (e.debtLink && paidOffDebtIds.has(e.debtLink)) return s;
     return s + e.cost;
   }, 0);
@@ -2077,6 +2078,7 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
   const [editingId,  setEditingId]  = useState(null);
   const [showAdd,    setShowAdd]    = useState(false);
   const [linkingId,  setLinkingId]  = useState(null);
+  const [skipMonthsId, setSkipMonthsId] = useState(null);
   const [newExp, setNewExp] = useState({ service: "", cost: "", category: "Övrigt", status: "unpaid", temporary: false });
   const [budgetTab, setBudgetTab] = useState("budget");
   const [showAddPlanned, setShowAddPlanned] = useState(false);
@@ -2088,6 +2090,16 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
   });
   const [showAddRecurring, setShowAddRecurring] = useState(false);
   const [newRec, setNewRec] = useState({ service: "", cost: "", category: "Övrigt", startDate: "" });
+
+  const MONTH_NAMES_SV = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
+  function toggleSkipMonth(expId, monthKey) {
+    setExpenses(es => es.map(e => {
+      if (e.id !== expId) return e;
+      const arr = e.skipMonths || [];
+      const next = arr.includes(monthKey) ? arr.filter(m => m !== monthKey) : [...arr, monthKey];
+      return { ...e, skipMonths: next };
+    }));
+  }
 
   const [editCat, setEditCat] = useState(null); // { name, icon, color, originalName }
   const dragRef = useRef({ dragId: null, dragOverId: null });
@@ -2397,6 +2409,7 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
                                 ? <span style={{ marginLeft: 7, fontSize: 10, background: "#d1fae5", color: "#10b981", borderRadius: 99, padding: "1px 7px", fontWeight: 700, verticalAlign: "middle" }}>✅ {linkedDebt.name} – frigjord!</span>
                                 : <span style={{ marginLeft: 7, fontSize: 10, background: "#fef3c7", color: "#b45309", borderRadius: 99, padding: "1px 7px", fontWeight: 700, verticalAlign: "middle" }}>🔗 {linkedDebt.name}</span>
                               )}
+                              {(e.skipMonths && e.skipMonths.length > 0) && <span style={{ marginLeft: 7, fontSize: 10, background: "#fef3c7", color: "#92400e", borderRadius: 99, padding: "1px 7px", fontWeight: 700, verticalAlign: "middle" }}>⏸ Pausad {e.skipMonths.length} mån</span>}
                             </span>
                             <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", flexShrink: 0, opacity: e.hidden ? 0.4 : 1 }}>{formatSEK(e.cost)}</span>
                             {canEdit && <button onClick={() => cycleStatus(e)} style={{ background: ss.rowBg || "var(--bg2)", border: `1px solid ${ss.dot}44`, borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700, color: ss.dot, cursor: "pointer", flexShrink: 0, fontFamily: "inherit" }}>{ss.label}</button>}
@@ -2404,6 +2417,7 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
                               <button onClick={() => setEditingId(e.id)} style={{ background: "none", border: "none", fontSize: 14, cursor: "pointer", color: "var(--text2)", padding: "2px 4px", flexShrink: 0 }}>✎</button>
                               <button onClick={() => deleteExpense(e.id)} style={{ background: "none", border: "none", fontSize: 14, cursor: "pointer", color: "#ef444480", padding: "2px 4px", flexShrink: 0 }}>✕</button>
                               <button onClick={() => setLinkingId(isLinking ? null : e.id)} style={{ background: "none", border: "none", fontSize: 12, cursor: "pointer", color: e.debtLink ? "#f59e0b" : "var(--text2)", padding: "2px 4px", flexShrink: 0 }} title="Länka till skuld">🔗</button>
+                              <button onClick={() => setSkipMonthsId(skipMonthsId === e.id ? null : e.id)} style={{ background: "none", border: "none", fontSize: 12, cursor: "pointer", color: (e.skipMonths && e.skipMonths.length > 0) ? "#f59e0b" : "var(--text2)", padding: "2px 4px", flexShrink: 0 }} title="Pausa specifika månader">📅</button>
                             </>}
                           </>
                         )}
@@ -2419,6 +2433,25 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
                               {d.name} — {formatSEK(d.remaining)} kvar
                             </button>
                           ))}
+                        </div>
+                      )}
+                      {skipMonthsId === e.id && (
+                        <div style={{ padding: "10px 18px", background: "var(--bg2)", borderBottom: "1px solid var(--border)" }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", marginBottom: 6 }}>Pausa i vilka månader? (fakturan räknas inte dessa månader)</div>
+                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                            {Array.from({ length: 12 }, (_, mi) => {
+                              const d2 = new Date();
+                              const md = new Date(d2.getFullYear(), d2.getMonth() + mi, 1);
+                              const mk = `${md.getFullYear()}-${String(md.getMonth()+1).padStart(2,"0")}`;
+                              const active = (e.skipMonths || []).includes(mk);
+                              return (
+                                <button key={mk} onClick={() => toggleSkipMonth(e.id, mk)}
+                                  style={{ padding: "4px 10px", borderRadius: 99, border: `1.5px solid ${active ? "#f59e0b" : "var(--border)"}`, background: active ? "#fef3c7" : "transparent", fontSize: 11, fontWeight: 600, cursor: "pointer", color: active ? "#92400e" : "var(--text2)", fontFamily: "inherit", textTransform: "capitalize" }}>
+                                  {md.toLocaleDateString("sv-SE", { month: "short", year: "2-digit" })}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -4933,7 +4966,11 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
   const now           = new Date();
   const sortedFuture  = [...futureSalaries].sort((a, b) => a.fromMonth.localeCompare(b.fromMonth));
   const beredskapTypes = appTexts.beredskapTypes || [];
-  const paidOffDebtIds = new Set(debts.filter(d => d.remaining <= 0).map(d => d.id));
+  // Pre-compute payoff month index for each debt (how many months from now until paid off)
+  const debtPayoffMonth = {};
+  debts.forEach(d => {
+    debtPayoffMonth[d.id] = d.remaining <= 0 ? -1 : calcDebtPayoff(d.remaining, d.monthly).months;
+  });
 
   function salaryForMonth(monthKey) {
     const override = monthSchedule[monthKey + "_amount"];
@@ -4952,13 +4989,30 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
     const monthLabel = d.toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
     const salary     = salaryForMonth(monthKey);
     const activeDebts = debts.filter(d2 => calcDebtPayoff(d2.remaining, d2.monthly).months > i);
-    // Skip expenses linked to paid-off debts (freed up money), temporary for future months, and hidden
+    // Debts that get paid off exactly at month i
+    const debtFreedThisMonth = [];
+    // Skip expenses linked to paid-off debts, temporary for future months, hidden, and skipped months
     const monthExpenses = expenses.reduce((s, e) => {
       if (e.hidden) return s;
-      if (e.debtLink && paidOffDebtIds.has(e.debtLink)) return s;
+      // Skip if this expense is paused in this month
+      if (e.skipMonths && e.skipMonths.includes(monthKey)) return s;
+      // Debt-linked: check if debt is already paid off by this month
+      if (e.debtLink) {
+        const payoff = debtPayoffMonth[e.debtLink];
+        if (payoff != null && payoff <= i) {
+          // Debt paid off by or before this month — don't count expense
+          if (payoff === i && !debtFreedThisMonth.find(x => x.id === e.debtLink)) {
+            const debt = debts.find(dd => dd.id === e.debtLink);
+            if (debt) debtFreedThisMonth.push(debt);
+          }
+          return s;
+        }
+      }
       if (e.temporary && i > 0) return s;
       return s + e.cost;
     }, 0);
+    // Collect expenses that are skipped this month for notation
+    const skippedExpenses = expenses.filter(e => !e.hidden && e.skipMonths && e.skipMonths.includes(monthKey));
     const extraItems = extraIncome.filter(e => e.month === monthKey);
     const extra      = extraItems.reduce((s, e) => s + e.amount, 0);
     const schedKey   = monthSchedule[monthKey] || null;
@@ -4979,7 +5033,12 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
     const totalIn    = salary + baseOther + extra;
     const leftover   = totalIn - monthExpenses - plannedCost - recurringCost;
     const salaryChange = sortedFuture.find(fs => fs.fromMonth === monthKey);
-    rows.push({ label: monthLabel, income: totalIn, salary, expenses: monthExpenses, plannedCost, plannedItems, recurringCost, leftover, extra, extraItems, beredskapBonus, schedType, salaryChange, debtFreeings: debts.filter(d2 => calcDebtPayoff(d2.remaining, d2.monthly).months === i) });
+    // debtFreeings: debts whose linked expenses become free this month
+    const allDebtFreeings = [...debtFreedThisMonth, ...debts.filter(d2 => {
+      const pm = debtPayoffMonth[d2.id];
+      return pm === i && !debtFreedThisMonth.find(x => x.id === d2.id);
+    })];
+    rows.push({ label: monthLabel, monthKey, income: totalIn, salary, expenses: monthExpenses, plannedCost, plannedItems, recurringCost, leftover, extra, extraItems, beredskapBonus, schedType, salaryChange, debtFreeings: allDebtFreeings, skippedExpenses });
   }
 
   return (
@@ -5047,7 +5106,8 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
                     </span>
                   ))}
                   {(row.plannedItems||[]).map(p => <span key={p.id} style={{ background: "#ede9fe", color: "#7c3aed", borderRadius: 6, padding: "1px 8px", marginRight: 4, fontWeight: 600 }}>🗓 {p.service} {formatSEK(p.cost)}</span>)}
-                  {row.debtFreeings.map(d => <span key={d.id} style={{ background: "#d1fae5", color: "#10b981", borderRadius: 6, padding: "1px 8px", marginRight: 4, fontWeight: 700 }}>🎉 {d.name} klar</span>)}
+                  {row.debtFreeings.map(d => <span key={d.id} style={{ background: "#d1fae5", color: "#10b981", borderRadius: 6, padding: "1px 8px", marginRight: 4, fontWeight: 700 }}>✅ {d.name} avbetald</span>)}
+                  {(row.skippedExpenses||[]).map(e => <span key={e.id} style={{ background: "#fef3c7", color: "#92400e", borderRadius: 6, padding: "1px 8px", marginRight: 4, fontWeight: 600, fontSize: 11 }}>⏸ {e.service} pausad</span>)}
                 </td>
               </tr>
             ))}
