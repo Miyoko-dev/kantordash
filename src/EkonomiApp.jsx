@@ -2077,6 +2077,7 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
   const [editingId,  setEditingId]  = useState(null);
   const [showAdd,    setShowAdd]    = useState(false);
   const [linkingId,  setLinkingId]  = useState(null);
+  const [skipMonthsId, setSkipMonthsId] = useState(null);
   const [newExp, setNewExp] = useState({ service: "", cost: "", category: "Övrigt", status: "unpaid", temporary: false });
   const [budgetTab, setBudgetTab] = useState("budget");
   const [showAddPlanned, setShowAddPlanned] = useState(false);
@@ -2088,6 +2089,16 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
   });
   const [showAddRecurring, setShowAddRecurring] = useState(false);
   const [newRec, setNewRec] = useState({ service: "", cost: "", category: "Övrigt", startDate: "" });
+
+  const MONTH_NAMES_SV = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
+  function toggleSkipMonth(expId, monthKey) {
+    setExpenses(es => es.map(e => {
+      if (e.id !== expId) return e;
+      const arr = e.skipMonths || [];
+      const next = arr.includes(monthKey) ? arr.filter(m => m !== monthKey) : [...arr, monthKey];
+      return { ...e, skipMonths: next };
+    }));
+  }
 
   const [editCat, setEditCat] = useState(null); // { name, icon, color, originalName }
   const dragRef = useRef({ dragId: null, dragOverId: null });
