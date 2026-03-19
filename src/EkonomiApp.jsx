@@ -5400,6 +5400,7 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
               <th>Fasta utgifter</th>
               <th>Sittande</th>
               <th>Planerade</th>
+              <th>Köp</th>
               <th>Kvar</th>
               <th>Noteringar</th>
             </tr>
