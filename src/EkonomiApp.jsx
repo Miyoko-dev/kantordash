@@ -1126,6 +1126,7 @@ function Sidebar({ page, setPage, user, setUser, sidebarOpen, setSidebarOpen, th
     { id: "debts", icon: "📉", label: "Skulder" },
     { id: "savings", icon: "🏦", label: "Sparande" },
     { id: "goals", icon: "🎯", label: "Mål" },
+    { id: "purchases", icon: "🛒", label: "Köp" },
     { id: "forecast", icon: "📊", label: "Prognos" },
     { id: "history", icon: "📅", label: "Månadshistorik" },
     { id: "calculator", icon: "🧮", label: "Kalkylator" },
