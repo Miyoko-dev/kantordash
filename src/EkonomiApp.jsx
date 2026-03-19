@@ -5301,7 +5301,7 @@ function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {} }
 // ============================================================
 // FORECAST PAGE
 // ============================================================
-function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureSalaries = [], plannedExpenses = [], monthSchedule = {}, appTexts = {}, recurringExpenses = [] }) {
+function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureSalaries = [], plannedExpenses = [], monthSchedule = {}, appTexts = {}, recurringExpenses = [], purchases = [] }) {
   const months = 12;
   const rows = [];
   const baseSalary    = income.find(i => i.type === "salary")?.amount || 0;
