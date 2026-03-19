@@ -2408,6 +2408,7 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
                                 ? <span style={{ marginLeft: 7, fontSize: 10, background: "#d1fae5", color: "#10b981", borderRadius: 99, padding: "1px 7px", fontWeight: 700, verticalAlign: "middle" }}>✅ {linkedDebt.name} – frigjord!</span>
                                 : <span style={{ marginLeft: 7, fontSize: 10, background: "#fef3c7", color: "#b45309", borderRadius: 99, padding: "1px 7px", fontWeight: 700, verticalAlign: "middle" }}>🔗 {linkedDebt.name}</span>
                               )}
+                              {(e.skipMonths && e.skipMonths.length > 0) && <span style={{ marginLeft: 7, fontSize: 10, background: "#fef3c7", color: "#92400e", borderRadius: 99, padding: "1px 7px", fontWeight: 700, verticalAlign: "middle" }}>⏸ Pausad {e.skipMonths.length} mån</span>}
                             </span>
                             <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", flexShrink: 0, opacity: e.hidden ? 0.4 : 1 }}>{formatSEK(e.cost)}</span>
                             {canEdit && <button onClick={() => cycleStatus(e)} style={{ background: ss.rowBg || "var(--bg2)", border: `1px solid ${ss.dot}44`, borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700, color: ss.dot, cursor: "pointer", flexShrink: 0, fontFamily: "inherit" }}>{ss.label}</button>}
