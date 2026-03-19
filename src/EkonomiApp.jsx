@@ -2434,6 +2434,25 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
                           ))}
                         </div>
                       )}
+                      {skipMonthsId === e.id && (
+                        <div style={{ padding: "10px 18px", background: "var(--bg2)", borderBottom: "1px solid var(--border)" }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", marginBottom: 6 }}>Pausa i vilka månader? (fakturan räknas inte dessa månader)</div>
+                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                            {Array.from({ length: 12 }, (_, mi) => {
+                              const d2 = new Date();
+                              const md = new Date(d2.getFullYear(), d2.getMonth() + mi, 1);
+                              const mk = `${md.getFullYear()}-${String(md.getMonth()+1).padStart(2,"0")}`;
+                              const active = (e.skipMonths || []).includes(mk);
+                              return (
+                                <button key={mk} onClick={() => toggleSkipMonth(e.id, mk)}
+                                  style={{ padding: "4px 10px", borderRadius: 99, border: `1.5px solid ${active ? "#f59e0b" : "var(--border)"}`, background: active ? "#fef3c7" : "transparent", fontSize: 11, fontWeight: 600, cursor: "pointer", color: active ? "#92400e" : "var(--text2)", fontFamily: "inherit", textTransform: "capitalize" }}>
+                                  {md.toLocaleDateString("sv-SE", { month: "short", year: "2-digit" })}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
