@@ -382,6 +382,7 @@ export default function App() {
   const [notifications, setNotifications] = useState([]);
   const [plannedExpenses, setPlannedExpenses] = useState(() => loadLS("plannedExpenses", []));
   const [recurringExpenses, setRecurringExpenses] = useState(() => loadLS("recurringExpenses", []));
+  const [purchases, setPurchases] = useState(() => loadLS("purchases", []));
 
   const [aiMessages, setAiMessages] = useState(() => {
     const saved = loadLS("aiMessages", null);
