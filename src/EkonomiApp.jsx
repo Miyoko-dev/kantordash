@@ -624,6 +624,7 @@ export default function App() {
   const paidOffDebtIds = new Set(debts.filter(d => d.remaining <= 0).map(d => d.id));
   const totalExpenses = expenses.reduce((s, e) => {
     if (e.hidden) return s;
+    if (e.skipMonths && e.skipMonths.includes(currentMonthKey)) return s;
     if (e.debtLink && paidOffDebtIds.has(e.debtLink)) return s;
     return s + e.cost;
   }, 0);
