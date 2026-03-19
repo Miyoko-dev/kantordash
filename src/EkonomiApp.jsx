@@ -2416,6 +2416,7 @@ function BudgetPage({ expenses, setExpenses, canEdit, addToHistory, debts, setDe
                               <button onClick={() => setEditingId(e.id)} style={{ background: "none", border: "none", fontSize: 14, cursor: "pointer", color: "var(--text2)", padding: "2px 4px", flexShrink: 0 }}>✎</button>
                               <button onClick={() => deleteExpense(e.id)} style={{ background: "none", border: "none", fontSize: 14, cursor: "pointer", color: "#ef444480", padding: "2px 4px", flexShrink: 0 }}>✕</button>
                               <button onClick={() => setLinkingId(isLinking ? null : e.id)} style={{ background: "none", border: "none", fontSize: 12, cursor: "pointer", color: e.debtLink ? "#f59e0b" : "var(--text2)", padding: "2px 4px", flexShrink: 0 }} title="Länka till skuld">🔗</button>
+                              <button onClick={() => setSkipMonthsId(skipMonthsId === e.id ? null : e.id)} style={{ background: "none", border: "none", fontSize: 12, cursor: "pointer", color: (e.skipMonths && e.skipMonths.length > 0) ? "#f59e0b" : "var(--text2)", padding: "2px 4px", flexShrink: 0 }} title="Pausa specifika månader">📅</button>
                             </>}
                           </>
                         )}
