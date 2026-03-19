@@ -5454,6 +5454,7 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
                     </span>
                   ))}
                   {(row.plannedItems||[]).map(p => <span key={p.id} style={{ background: "#ede9fe", color: "#7c3aed", borderRadius: 6, padding: "1px 8px", marginRight: 4, fontWeight: 600 }}>🗓 {p.service} {formatSEK(p.cost)}</span>)}
+                  {(row.purchaseItems||[]).map(p => <span key={p.id} style={{ background: "#e0f2fe", color: "#0369a1", borderRadius: 6, padding: "1px 8px", marginRight: 4, fontWeight: 600, fontSize: 11 }}>🛒 {p.name} {formatSEK(p.cost)}</span>)}
                   {row.debtFreeings.map(d => <span key={d.id} style={{ background: "#d1fae5", color: "#10b981", borderRadius: 6, padding: "1px 8px", marginRight: 4, fontWeight: 700 }}>✅ {d.name} avbetald</span>)}
                   {(row.skippedExpenses||[]).map(e => <span key={e.id} style={{ background: "#fef3c7", color: "#92400e", borderRadius: 6, padding: "1px 8px", marginRight: 4, fontWeight: 600, fontSize: 11 }}>⏸ {e.service} pausad</span>)}
                 </td>
