@@ -5373,15 +5373,18 @@ function ForecastPage({ income, expenses, debts, extraIncome, beredskap, futureS
       if (r.hidden || !r.startDate) return false;
       return getSalaryMonthKeyForDate(r.startDate) <= monthKey;
     }).reduce((s, r) => s + r.cost, 0);
+    // Purchases scheduled for this month
+    const purchaseItems = purchases.filter(p => !p.purchased && p.month === monthKey);
+    const purchaseCost = purchaseItems.reduce((s, p) => s + (p.cost || 0), 0);
     const totalIn    = salary + baseOther + extra;
-    const leftover   = totalIn - monthExpenses - plannedCost - recurringCost;
+    const leftover   = totalIn - monthExpenses - plannedCost - recurringCost - purchaseCost;
     const salaryChange = sortedFuture.find(fs => fs.fromMonth === monthKey);
     // debtFreeings: debts whose linked expenses become free this month
     const allDebtFreeings = [...debtFreedThisMonth, ...debts.filter(d2 => {
       const pm = debtPayoffMonth[d2.id];
       return pm === i && !debtFreedThisMonth.find(x => x.id === d2.id);
     })];
-    rows.push({ label: monthLabel, monthKey, income: totalIn, salary, expenses: monthExpenses, plannedCost, plannedItems, recurringCost, leftover, extra, extraItems, beredskapBonus, schedType, salaryChange, debtFreeings: allDebtFreeings, skippedExpenses });
+    rows.push({ label: monthLabel, monthKey, income: totalIn, salary, expenses: monthExpenses, plannedCost, plannedItems, recurringCost, purchaseCost, purchaseItems, leftover, extra, extraItems, beredskapBonus, schedType, salaryChange, debtFreeings: allDebtFreeings, skippedExpenses });
   }
 
   return (
