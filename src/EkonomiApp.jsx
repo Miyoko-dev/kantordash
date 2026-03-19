@@ -307,7 +307,7 @@ export default function App() {
   const undoToastTimer = useRef(null);
 
   function pushUndo(label) {
-    const snapshot = { expenses, debts, goals, income, beredskap, extraIncome, savingsAccounts, monthlyHistory, monthSchedule };
+    const snapshot = { expenses, debts, goals, purchases, income, beredskap, extraIncome, savingsAccounts, monthlyHistory, monthSchedule };
     setUndoStack(s => [...s.slice(-19), { label, snapshot, ts: Date.now() }]);
     if (undoToastTimer.current) clearTimeout(undoToastTimer.current);
     setUndoToast({ label });
