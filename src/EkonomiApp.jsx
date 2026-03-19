@@ -324,6 +324,7 @@ export default function App() {
         if (snapshot.expenses        !== undefined) setExpenses(snapshot.expenses);
         if (snapshot.debts           !== undefined) setDebts(snapshot.debts);
         if (snapshot.goals           !== undefined) setGoals(snapshot.goals);
+        if (snapshot.purchases       !== undefined) setPurchases(snapshot.purchases);
         if (snapshot.income          !== undefined) setIncome(snapshot.income);
         if (snapshot.beredskap       !== undefined) setBeredskap(snapshot.beredskap);
         if (snapshot.extraIncome     !== undefined) setExtraIncome(snapshot.extraIncome);
