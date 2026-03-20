@@ -4975,6 +4975,7 @@ const PURCHASE_CATEGORIES = ["Teknik", "Hem", "Fordon", "Nöje", "Kläder", "Hä
 function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {} }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editPurchase, setEditPurchase] = useState(null);
+  const [imagePickerFor, setImagePickerFor] = useState(null); // "edit" | "new"
   const [newPurchase, setNewPurchase] = useState({ name: "", description: "", cost: "", month: "", color: "#3b82f6", icon: "🛒", category: "Övrigt", notes: "", image: null, imageOffsetY: 50 });
 
   const totalCost = purchases.reduce((s, p) => s + (p.cost || 0), 0);
