@@ -5016,6 +5016,22 @@ function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {} }
 
   return (
     <div className="fadeIn">
+      {/* ══ IMAGE SEARCH PICKER ══ */}
+      {imagePickerFor && (
+        <ImageSearchPicker
+          accentColor={imagePickerFor === "edit" ? ((editPurchase && editPurchase.color) || "#3b82f6") : ((newPurchase && newPurchase.color) || "#3b82f6")}
+          onClose={() => setImagePickerFor(null)}
+          onSelect={url => {
+            if (imagePickerFor === "edit") {
+              setEditPurchase(p => ({ ...p, image: url, imageOffsetY: 50 }));
+            } else {
+              setNewPurchase(n => ({ ...n, image: url, imageOffsetY: 50 }));
+            }
+            setImagePickerFor(null);
+          }}
+        />
+      )}
+
       {/* Edit modal */}
       {editPurchase && (() => {
         const col = editPurchase.color || "#3b82f6";
