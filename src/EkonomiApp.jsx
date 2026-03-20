@@ -5104,6 +5104,30 @@ function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {} }
                     ))}
                   </div>
                 </div>
+                {/* Image */}
+                <div>
+                  <label style={lStyle}>📷 Bild (valfritt)</label>
+                  {editPurchase.image ? (
+                    <div>
+                      <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "2px solid var(--border)", height: 140 }}>
+                        <img src={editPurchase.image} alt="Köpbild" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `center ${editPurchase.imageOffsetY ?? 50}%`, display: "block" }} />
+                        <button onClick={() => setEditPurchase(p => ({ ...p, image: null }))} style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.55)", border: "none", borderRadius: "50%", width: 26, height: 26, color: "#fff", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                        <button onClick={() => setImagePickerFor("edit")} style={{ position: "absolute", bottom: 6, right: 6, background: "rgba(0,0,0,0.55)", border: "none", borderRadius: 8, padding: "4px 10px", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>🔍 Byt bild</button>
+                      </div>
+                      <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 11, color: "var(--text2)", fontWeight: 700, whiteSpace: "nowrap" }}>↕ Justera</span>
+                        <input type="range" min="0" max="100" value={editPurchase.imageOffsetY ?? 50}
+                          onChange={e => setEditPurchase(p => ({ ...p, imageOffsetY: Number(e.target.value) }))}
+                          style={{ flex: 1, accentColor: col, cursor: "pointer" }} />
+                        <span style={{ fontSize: 11, color: "var(--text2)", width: 32, textAlign: "right" }}>{editPurchase.imageOffsetY ?? 50}%</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => setImagePickerFor("edit")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 10, border: "2px dashed var(--border)", background: "var(--bg2)", cursor: "pointer", color: "var(--text2)", fontSize: 13, fontWeight: 600, width: "100%", boxSizing: "border-box", fontFamily: "inherit" }}>
+                      <span style={{ fontSize: 20 }}>🔍</span> Sök och välj bild...
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div style={{ padding: "16px 28px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, flexShrink: 0, background: "var(--card)" }}>
