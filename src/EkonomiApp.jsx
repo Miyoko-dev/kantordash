@@ -647,6 +647,29 @@ export default function App() {
   // Purchases scheduled for this month (not yet purchased)
   const purchasesThisMonth = purchases.filter(p => !p.purchased && p.month === currentMonthKey).reduce((s, p) => s + (p.cost || 0), 0);
   const leftover = totalIncome - totalExpenses - plannedThisMonth - recurringThisMonth - purchasesThisMonth;
+
+  // Overview should mirror the first row in Prognos (actual current calendar month)
+  const overviewMonthKey = `${now_d.getFullYear()}-${String(now_d.getMonth() + 1).padStart(2, "0")}`;
+  const overviewIncome = resolveMonthSalary(overviewMonthKey) + baseOtherIncome
+    + extraIncome.filter(e => e.month === overviewMonthKey).reduce((s, e) => s + e.amount, 0);
+  const overviewBaseExpenses = expenses.reduce((s, e) => {
+    if (e.hidden) return s;
+    if (e.skipMonths && e.skipMonths.includes(overviewMonthKey)) return s;
+    if (e.debtLink && paidOffDebtIds.has(e.debtLink)) return s;
+    return s + e.cost;
+  }, 0);
+  const overviewPlannedExpenses = plannedExpenses.filter(p => {
+    if (!p.dueDate) return false;
+    return getSalaryMonthKeyForDate(p.dueDate) === overviewMonthKey;
+  }).reduce((s, p) => s + p.cost, 0);
+  const overviewRecurringExpenses = recurringExpenses.filter(r => {
+    if (!r.startDate) return false;
+    return getSalaryMonthKeyForDate(r.startDate) <= overviewMonthKey;
+  }).filter(r => !r.hidden).reduce((s, r) => s + r.cost, 0);
+  const overviewPurchaseExpenses = purchases.filter(p => !p.purchased && p.month === overviewMonthKey).reduce((s, p) => s + (p.cost || 0), 0);
+  const overviewTotalExpenses = overviewBaseExpenses + overviewPlannedExpenses + overviewRecurringExpenses + overviewPurchaseExpenses;
+  const overviewLeftover = overviewIncome - overviewTotalExpenses;
+
   const totalDebts = debts.reduce((s, d) => s + d.remaining, 0);
   const totalAssets = assets.reduce((s, a) => s + a.amount, 0) + savingsAccounts.reduce((s, sa) => s + sa.balance, 0);
   const netWorth = totalAssets;
@@ -835,7 +858,7 @@ export default function App() {
         </div>
 
         <div className="main-page-content fadeIn" style={{ padding: "16px 32px 40px" }}><div className="page-content-inner">
-          {page === "dashboard" && <DashboardPage totalIncome={totalIncome} totalExpenses={totalExpenses + plannedThisMonth + recurringThisMonth + purchasesThisMonth} leftover={leftover} totalDebts={totalDebts} netWorth={netWorth} healthScore={healthScore} daysToSalary={daysToSalary} nextSalary={nextSalary} debts={debts} expenses={expenses} savings={savingsAccounts} goals={goals} history={history} wishes={wishes} setWishes={setWishes} user={user} appTexts={appTexts} />}
+          {page === "dashboard" && <DashboardPage totalIncome={overviewIncome} totalExpenses={overviewTotalExpenses} leftover={overviewLeftover} totalDebts={totalDebts} netWorth={netWorth} healthScore={healthScore} daysToSalary={daysToSalary} nextSalary={nextSalary} debts={debts} expenses={expenses} savings={savingsAccounts} goals={goals} history={history} wishes={wishes} setWishes={setWishes} user={user} appTexts={appTexts} />}
           {page === "budget" && <BudgetPage expenses={expenses} setExpenses={setExpenses} canEdit={canEdit} addToHistory={addToHistory} debts={debts} setDebts={setDebts} plannedExpenses={plannedExpenses} setPlannedExpenses={setPlannedExpenses} categoryMeta={categoryMeta} setCategoryMeta={setCategoryMeta} pushUndo={pushUndo} recurringExpenses={recurringExpenses} setRecurringExpenses={setRecurringExpenses} />}
           {page === "income" && <IncomePage income={income} setIncome={setIncome} extraIncome={extraIncome} setExtraIncome={setExtraIncome} beredskap={beredskap} setBeredskap={setBeredskap} canEdit={canEdit} futureSalaries={futureSalaries} setFutureSalaries={setFutureSalaries} pushUndo={pushUndo} monthSchedule={monthSchedule} setMonthSchedule={setMonthSchedule} appTexts={appTexts} />}
           {page === "debts" && <DebtsPage debts={debts} setDebts={setDebts} canEdit={canEdit} updateDebt={updateDebt} pushUndo={pushUndo} expenses={expenses} />}
