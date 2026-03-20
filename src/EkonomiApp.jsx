@@ -644,7 +644,9 @@ export default function App() {
     if (!r.startDate) return false;
     return getSalaryMonthKeyForDate(r.startDate) <= currentMonthKey;
   }).filter(r => !r.hidden).reduce((s, r) => s + r.cost, 0);
-  const leftover = totalIncome - totalExpenses - plannedThisMonth - recurringThisMonth;
+  // Purchases scheduled for this month (not yet purchased)
+  const purchasesThisMonth = purchases.filter(p => !p.purchased && p.month === currentMonthKey).reduce((s, p) => s + (p.cost || 0), 0);
+  const leftover = totalIncome - totalExpenses - plannedThisMonth - recurringThisMonth - purchasesThisMonth;
   const totalDebts = debts.reduce((s, d) => s + d.remaining, 0);
   const totalAssets = assets.reduce((s, a) => s + a.amount, 0) + savingsAccounts.reduce((s, sa) => s + sa.balance, 0);
   const netWorth = totalAssets;
