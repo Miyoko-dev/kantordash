@@ -5288,6 +5288,12 @@ function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {} }
               return (
                 <Card key={purchase.id} style={{ position: "relative", overflow: "hidden" }}>
                   <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: col }} />
+                  {/* Purchase image */}
+                  {purchase.image && (
+                    <div style={{ margin: "8px -24px 12px", overflow: "hidden", maxHeight: 130 }}>
+                      <img src={purchase.image} alt={purchase.name} style={{ width: "100%", objectFit: "cover", maxHeight: 130, display: "block", objectPosition: `center ${purchase.imageOffsetY ?? 50}%` }} />
+                    </div>
+                  )}
                   <div style={{ paddingTop: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
