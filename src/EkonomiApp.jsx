@@ -644,7 +644,9 @@ export default function App() {
     if (!r.startDate) return false;
     return getSalaryMonthKeyForDate(r.startDate) <= currentMonthKey;
   }).filter(r => !r.hidden).reduce((s, r) => s + r.cost, 0);
-  const leftover = totalIncome - totalExpenses - plannedThisMonth - recurringThisMonth;
+  // Purchases scheduled for this month (not yet purchased)
+  const purchasesThisMonth = purchases.filter(p => !p.purchased && p.month === currentMonthKey).reduce((s, p) => s + (p.cost || 0), 0);
+  const leftover = totalIncome - totalExpenses - plannedThisMonth - recurringThisMonth - purchasesThisMonth;
   const totalDebts = debts.reduce((s, d) => s + d.remaining, 0);
   const totalAssets = assets.reduce((s, a) => s + a.amount, 0) + savingsAccounts.reduce((s, sa) => s + sa.balance, 0);
   const netWorth = totalAssets;
@@ -1600,12 +1602,13 @@ function DashboardPage({ totalIncome, totalExpenses, leftover, totalDebts, netWo
   const totalOriginal = debts.reduce((s, d) => s + d.total, 0);
   const debtPct       = totalOriginal > 0 ? Math.round((totalPaidOff / totalOriginal) * 100) : 0;
 
-  // Debt payments from Budget only — expenses linked to a debt
+  // Debt payments from Budget only — expenses linked to a debt (exclude paused/skipped for this month)
+  const currentMK = new Date().toISOString().slice(0, 7);
   const budgetLinkedDebtTotal = expenses
-    .filter(e => e.debtLink)
+    .filter(e => e.debtLink && !e.hidden && !(e.skipMonths && e.skipMonths.includes(currentMK)))
     .reduce((s, e) => s + e.cost, 0);
   const paidThisMonth = expenses
-    .filter(e => e.debtLink && e.status === "paid")
+    .filter(e => e.debtLink && e.status === "paid" && !e.hidden && !(e.skipMonths && e.skipMonths.includes(currentMK)))
     .reduce((s, e) => s + e.cost, 0);
 
   // Savings stats
@@ -4972,6 +4975,7 @@ const PURCHASE_CATEGORIES = ["Teknik", "Hem", "Fordon", "Nöje", "Kläder", "Hä
 function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {} }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editPurchase, setEditPurchase] = useState(null);
+  const [imagePickerFor, setImagePickerFor] = useState(null); // "edit" | "new"
   const [newPurchase, setNewPurchase] = useState({ name: "", description: "", cost: "", month: "", color: "#3b82f6", icon: "🛒", category: "Övrigt", notes: "", image: null, imageOffsetY: 50 });
 
   const totalCost = purchases.reduce((s, p) => s + (p.cost || 0), 0);
@@ -5012,6 +5016,22 @@ function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {} }
 
   return (
     <div className="fadeIn">
+      {/* ══ IMAGE SEARCH PICKER ══ */}
+      {imagePickerFor && (
+        <ImageSearchPicker
+          accentColor={imagePickerFor === "edit" ? ((editPurchase && editPurchase.color) || "#3b82f6") : ((newPurchase && newPurchase.color) || "#3b82f6")}
+          onClose={() => setImagePickerFor(null)}
+          onSelect={url => {
+            if (imagePickerFor === "edit") {
+              setEditPurchase(p => ({ ...p, image: url, imageOffsetY: 50 }));
+            } else {
+              setNewPurchase(n => ({ ...n, image: url, imageOffsetY: 50 }));
+            }
+            setImagePickerFor(null);
+          }}
+        />
+      )}
+
       {/* Edit modal */}
       {editPurchase && (() => {
         const col = editPurchase.color || "#3b82f6";
@@ -5083,6 +5103,30 @@ function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {} }
                         style={{ width: 38, height: 38, borderRadius: 10, border: `2px solid ${editPurchase.icon === icon ? col : "transparent"}`, background: editPurchase.icon === icon ? col + "20" : "var(--card)", fontSize: 20, cursor: "pointer" }}>{icon}</button>
                     ))}
                   </div>
+                </div>
+                {/* Image */}
+                <div>
+                  <label style={lStyle}>📷 Bild (valfritt)</label>
+                  {editPurchase.image ? (
+                    <div>
+                      <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "2px solid var(--border)", height: 140 }}>
+                        <img src={editPurchase.image} alt="Köpbild" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `center ${editPurchase.imageOffsetY ?? 50}%`, display: "block" }} />
+                        <button onClick={() => setEditPurchase(p => ({ ...p, image: null }))} style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.55)", border: "none", borderRadius: "50%", width: 26, height: 26, color: "#fff", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                        <button onClick={() => setImagePickerFor("edit")} style={{ position: "absolute", bottom: 6, right: 6, background: "rgba(0,0,0,0.55)", border: "none", borderRadius: 8, padding: "4px 10px", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>🔍 Byt bild</button>
+                      </div>
+                      <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 11, color: "var(--text2)", fontWeight: 700, whiteSpace: "nowrap" }}>↕ Justera</span>
+                        <input type="range" min="0" max="100" value={editPurchase.imageOffsetY ?? 50}
+                          onChange={e => setEditPurchase(p => ({ ...p, imageOffsetY: Number(e.target.value) }))}
+                          style={{ flex: 1, accentColor: col, cursor: "pointer" }} />
+                        <span style={{ fontSize: 11, color: "var(--text2)", width: 32, textAlign: "right" }}>{editPurchase.imageOffsetY ?? 50}%</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => setImagePickerFor("edit")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 10, border: "2px dashed var(--border)", background: "var(--bg2)", cursor: "pointer", color: "var(--text2)", fontSize: 13, fontWeight: 600, width: "100%", boxSizing: "border-box", fontFamily: "inherit" }}>
+                      <span style={{ fontSize: 20 }}>🔍</span> Sök och välj bild...
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -5195,6 +5239,30 @@ function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {} }
                   ))}
                 </div>
               </div>
+              {/* Image */}
+              <div>
+                <label style={lStyle}>📷 Bild (valfritt)</label>
+                {newPurchase.image ? (
+                  <div>
+                    <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "2px solid var(--border)", height: 130 }}>
+                      <img src={newPurchase.image} alt="Köpbild" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `center ${newPurchase.imageOffsetY ?? 50}%`, display: "block" }} />
+                      <button onClick={() => setNewPurchase(n => ({ ...n, image: null }))} style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.55)", border: "none", borderRadius: "50%", width: 26, height: 26, color: "#fff", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                      <button onClick={() => setImagePickerFor("new")} style={{ position: "absolute", bottom: 6, right: 6, background: "rgba(0,0,0,0.55)", border: "none", borderRadius: 8, padding: "4px 10px", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>🔍 Byt bild</button>
+                    </div>
+                    <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 11, color: "var(--text2)", fontWeight: 700, whiteSpace: "nowrap" }}>↕ Justera</span>
+                      <input type="range" min="0" max="100" value={newPurchase.imageOffsetY ?? 50}
+                        onChange={e => setNewPurchase(n => ({ ...n, imageOffsetY: Number(e.target.value) }))}
+                        style={{ flex: 1, accentColor: newPurchase.color || "#3b82f6", cursor: "pointer" }} />
+                      <span style={{ fontSize: 11, color: "var(--text2)", width: 32, textAlign: "right" }}>{newPurchase.imageOffsetY ?? 50}%</span>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => setImagePickerFor("new")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 10, border: "2px dashed var(--border)", background: "var(--bg2)", cursor: "pointer", color: "var(--text2)", fontSize: 13, fontWeight: 600, width: "100%", boxSizing: "border-box", fontFamily: "inherit" }}>
+                    <span style={{ fontSize: 20 }}>🔍</span> Sök och välj bild...
+                  </button>
+                )}
+              </div>
             </div>
 
             <div style={{ padding: "16px 28px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, flexShrink: 0 }}>
@@ -5220,6 +5288,12 @@ function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {} }
               return (
                 <Card key={purchase.id} style={{ position: "relative", overflow: "hidden" }}>
                   <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: col }} />
+                  {/* Purchase image */}
+                  {purchase.image && (
+                    <div style={{ margin: "8px -24px 12px", overflow: "hidden", maxHeight: 130 }}>
+                      <img src={purchase.image} alt={purchase.name} style={{ width: "100%", objectFit: "cover", maxHeight: 130, display: "block", objectPosition: `center ${purchase.imageOffsetY ?? 50}%` }} />
+                    </div>
+                  )}
                   <div style={{ paddingTop: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
