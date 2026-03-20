@@ -1602,12 +1602,13 @@ function DashboardPage({ totalIncome, totalExpenses, leftover, totalDebts, netWo
   const totalOriginal = debts.reduce((s, d) => s + d.total, 0);
   const debtPct       = totalOriginal > 0 ? Math.round((totalPaidOff / totalOriginal) * 100) : 0;
 
-  // Debt payments from Budget only — expenses linked to a debt
+  // Debt payments from Budget only — expenses linked to a debt (exclude paused/skipped for this month)
+  const currentMK = new Date().toISOString().slice(0, 7);
   const budgetLinkedDebtTotal = expenses
-    .filter(e => e.debtLink)
+    .filter(e => e.debtLink && !e.hidden && !(e.skipMonths && e.skipMonths.includes(currentMK)))
     .reduce((s, e) => s + e.cost, 0);
   const paidThisMonth = expenses
-    .filter(e => e.debtLink && e.status === "paid")
+    .filter(e => e.debtLink && e.status === "paid" && !e.hidden && !(e.skipMonths && e.skipMonths.includes(currentMK)))
     .reduce((s, e) => s + e.cost, 0);
 
   // Savings stats
