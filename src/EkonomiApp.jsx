@@ -4795,7 +4795,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {}, appTexts = {
                     )}
 
                     {/* Sparat totalt footer */}
-                    {goal.monthlyActive && monthly > 0 && doneDate && (
+                    {showTimeline && goal.monthlyActive && monthly > 0 && doneDate && (
                       <div style={{ background: "var(--bg2)", borderRadius: 10, padding: "7px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                         <span style={{ fontSize: 12, color: "var(--text2)" }}>💰 Sparat totalt</span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: goal.color }}>{formatSEK(goal.target)} i {doneDate.charAt(0).toUpperCase() + doneDate.slice(1)}</span>
