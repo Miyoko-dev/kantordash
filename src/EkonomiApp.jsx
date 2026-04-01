@@ -7086,6 +7086,32 @@ function AdminPage({ users, setUsers, expenses, setExpenses, history, pageVisibi
             </Card>
 
             <Card>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>🎯 Mål — Synliga sektioner</div>
+              <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16 }}>Välj vilka delar av målkorten som visas som standard</div>
+              {[
+                { key: "milestones", icon: "🏁", label: "Milstolpar",       desc: "25%, 50%, 75% progress-prickar" },
+                { key: "deposit",    icon: "💰", label: "Sätt in pengar",   desc: "Knappar för insättning/uttag" },
+                { key: "timeline",   icon: "📈", label: "Tillväxtkurva",    desc: "6-månaders prognos och klart-datum" },
+                { key: "category",   icon: "🏷",  label: "Kategori",        desc: "Kategori-badge på korten" },
+              ].map(section => {
+                const gs = appTexts.goalSections || {};
+                const isOn = gs[section.key] !== false;
+                return (
+                  <div key={section.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                      <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>{section.icon}</span>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{section.label}</div>
+                        <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 1 }}>{section.desc}</div>
+                      </div>
+                    </div>
+                    <Toggle checked={isOn} onChange={val => setAppTexts(t => ({ ...t, goalSections: { ...(t.goalSections || {}), [section.key]: val } }))} />
+                  </div>
+                );
+              })}
+            </Card>
+
+            <Card>
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>🐷 Spartips — Procentsatser</div>
               <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 20 }}>Styr vilken sparrekommendation som visas på Översikt beroende på hur mycket som är kvar</div>
               {[
