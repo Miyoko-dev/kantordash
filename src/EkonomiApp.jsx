@@ -5003,7 +5003,8 @@ const PURCHASE_COLORS = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ef4444", 
 const DEFAULT_PURCHASE_ICONS = ["🛒", "🖥", "📱", "🎮", "🚗", "🏠", "👟", "🎁", "🔧", "🎵", "📚", "✈️", "🍕", "💻", "⌚"];
 const PURCHASE_CATEGORIES = ["Teknik", "Hem", "Fordon", "Nöje", "Kläder", "Hälsa", "Övrigt"];
 
-function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {} }) {
+function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {}, appTexts = {} }) {
+  const PURCHASE_ICONS = getAllIcons(DEFAULT_PURCHASE_ICONS, appTexts);
   const [showAdd, setShowAdd] = useState(false);
   const [editPurchase, setEditPurchase] = useState(null);
   const [imagePickerFor, setImagePickerFor] = useState(null); // "edit" | "new"
