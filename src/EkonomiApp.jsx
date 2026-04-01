@@ -4994,7 +4994,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
 // PURCHASES PAGE (Köp)
 // ============================================================
 const PURCHASE_COLORS = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ef4444", "#ec4899", "#14b8a6", "#f97316"];
-const PURCHASE_ICONS = ["🛒", "🖥", "📱", "🎮", "🚗", "🏠", "👟", "🎁", "🔧", "🎵", "📚", "✈️", "🍕", "💻", "⌚"];
+const DEFAULT_PURCHASE_ICONS = ["🛒", "🖥", "📱", "🎮", "🚗", "🏠", "👟", "🎁", "🔧", "🎵", "📚", "✈️", "🍕", "💻", "⌚"];
 const PURCHASE_CATEGORIES = ["Teknik", "Hem", "Fordon", "Nöje", "Kläder", "Hälsa", "Övrigt"];
 
 function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {} }) {
