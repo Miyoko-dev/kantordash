@@ -863,8 +863,8 @@ export default function App() {
           {page === "income" && <IncomePage income={income} setIncome={setIncome} extraIncome={extraIncome} setExtraIncome={setExtraIncome} beredskap={beredskap} setBeredskap={setBeredskap} canEdit={canEdit} futureSalaries={futureSalaries} setFutureSalaries={setFutureSalaries} pushUndo={pushUndo} monthSchedule={monthSchedule} setMonthSchedule={setMonthSchedule} appTexts={appTexts} />}
           {page === "debts" && <DebtsPage debts={debts} setDebts={setDebts} canEdit={canEdit} updateDebt={updateDebt} pushUndo={pushUndo} expenses={expenses} />}
           {page === "savings" && <SavingsPage savingsAccounts={savingsAccounts} setSavingsAccounts={setSavingsAccounts} assets={assets} setAssets={setAssets} canEdit={canEdit} pushUndo={pushUndo} />}
-          {page === "goals" && <GoalsPage goals={goals} setGoals={setGoals} canEdit={canEdit} pushUndo={pushUndo} />}
-          {page === "purchases" && <PurchasesPage purchases={purchases} setPurchases={setPurchases} canEdit={canEdit} pushUndo={pushUndo} />}
+          {page === "goals" && <GoalsPage goals={goals} setGoals={setGoals} canEdit={canEdit} pushUndo={pushUndo} appTexts={appTexts} />}
+          {page === "purchases" && <PurchasesPage purchases={purchases} setPurchases={setPurchases} canEdit={canEdit} pushUndo={pushUndo} appTexts={appTexts} />}
           {page === "forecast" && <ForecastPage income={income} expenses={expenses} debts={debts} extraIncome={extraIncome} beredskap={beredskap} futureSalaries={futureSalaries} plannedExpenses={plannedExpenses} monthSchedule={monthSchedule} appTexts={appTexts} recurringExpenses={recurringExpenses} purchases={purchases} />}
           {page === "ai" && <AIPage messages={aiMessages} setMessages={setAiMessages} income={totalIncome} expenses={totalExpenses} debts={totalDebts} netWorth={netWorth} healthScore={healthScore} leftover={leftover} allDebts={debts} allExpenses={expenses} appTexts={appTexts} setPage={setPage} goals={goals} />}
           {page === "history" && <MonthlyHistoryPage monthlyHistory={monthlyHistory} setMonthlyHistory={setMonthlyHistory} expenses={expenses} setExpenses={setExpenses} totalIncome={totalIncome} totalExpenses={totalExpenses} leftover={leftover} debts={debts} pushUndo={pushUndo} />}
@@ -4015,10 +4015,18 @@ const INITIAL_GOALS = [
 ];
 
 const GOAL_CATEGORIES = ["Nöje", "Resor", "Teknik", "Hälsa", "Hem", "Övrigt"];
-const GOAL_ICONS = ["🎬", "🗼", "💻", "🏖", "🎮", "🚗", "🏠", "📚", "🎵", "💪", "✈️", "🍕", "👟", "🎁", "🐶"];
+const DEFAULT_GOAL_ICONS = ["🎬", "🗼", "💻", "🏖", "🎮", "🚗", "🏠", "📚", "🎵", "💪", "✈️", "🍕", "👟", "🎁", "🐶"];
 const GOAL_COLORS = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ef4444", "#ec4899", "#14b8a6", "#f97316"];
+function getCustomIcons(appTexts) { return appTexts?.customEmojis || []; }
+function getAllIcons(defaults, appTexts) { return [...defaults, ...getCustomIcons(appTexts)]; }
 
-function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
+function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {}, appTexts = {} }) {
+  const GOAL_ICONS = getAllIcons(DEFAULT_GOAL_ICONS, appTexts);
+  const gs = appTexts.goalSections || {};
+  const showMilestones = gs.milestones !== false;
+  const showDeposit = gs.deposit !== false;
+  const showTimeline = gs.timeline !== false;
+  const showCategory = gs.category !== false;
   const [showAdd, setShowAdd] = useState(false);
   const [adjustGoalId, setAdjustGoalId] = useState(null);
   const [adjustMode, setAdjustMode] = useState("add");
@@ -4675,7 +4683,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
                           <div style={{ fontSize: 15, fontWeight: 800 }}>{goal.name}</div>
                           {goal.description && <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 1 }}>{goal.description}</div>}
                           <div style={{ display: "flex", gap: 5, marginTop: 3, alignItems: "center" }}>
-                            <span style={{ fontSize: 11, background: goal.color + "20", color: goal.color, borderRadius: 99, padding: "1px 8px", fontWeight: 700 }}>{goal.category}</span>
+                            {showCategory && <span style={{ fontSize: 11, background: goal.color + "20", color: goal.color, borderRadius: 99, padding: "1px 8px", fontWeight: 700 }}>{goal.category}</span>}
                             {/* Free badge */}
                             {goal.isFree && (
                               <span style={{ fontSize: 11, background: "#d1fae5", color: "#059669", borderRadius: 99, padding: "1px 8px", fontWeight: 700 }}>🆓 Gratis</span>
@@ -4702,7 +4710,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
                       </div>
                     ) : <>
                     {/* Milestone dots */}
-                    <div style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center" }}>
+                    {showMilestones && <div style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center" }}>
                       <span style={{ fontSize: 11, color: "var(--text2)" }}>Milstolpar:</span>
                       {milestones.map(m => (
                         <div key={m.pct} style={{ display: "flex", alignItems: "center", gap: 3 }}>
@@ -4713,7 +4721,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
                         </div>
                       ))}
                       <span style={{ fontSize: 10, color: "var(--text2)", marginLeft: "auto" }}>🏁 100%</span>
-                    </div>
+                    </div>}
 
                     {/* Progress bar */}
                     <div style={{ marginBottom: 12 }}>
@@ -4736,7 +4744,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
                     </>}
 
                     {/* Growth mini-chart (only if monthly deposit set & active) */}
-                    {goal.monthlyActive && monthly > 0 && chartPoints.length > 1 && (
+                    {showTimeline && goal.monthlyActive && monthly > 0 && chartPoints.length > 1 && (
                       <div style={{ background: "var(--bg2)", borderRadius: 12, padding: "10px 12px", marginBottom: 10 }}>
                         <div style={{ fontSize: 10, color: "var(--text2)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>📈 Tillväxt nästa 6 månader</div>
                         <svg width="100%" viewBox={`0 0 ${chartW} ${chartH + 16}`} style={{ overflow: "visible" }}>
@@ -4787,7 +4795,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
                     )}
 
                     {/* Sparat totalt footer */}
-                    {goal.monthlyActive && monthly > 0 && doneDate && (
+                    {showTimeline && goal.monthlyActive && monthly > 0 && doneDate && (
                       <div style={{ background: "var(--bg2)", borderRadius: 10, padding: "7px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                         <span style={{ fontSize: 12, color: "var(--text2)" }}>💰 Sparat totalt</span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: goal.color }}>{formatSEK(goal.target)} i {doneDate.charAt(0).toUpperCase() + doneDate.slice(1)}</span>
@@ -4795,7 +4803,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
                     )}
 
                     {/* Action buttons */}
-                    {canEdit && (
+                    {showDeposit && canEdit && (
                       adjustGoalId === goal.id ? (
                         <div style={{ background: "var(--bg2)", borderRadius: 12, padding: 12, border: "1px solid var(--border)" }}>
                           <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
@@ -4992,10 +5000,11 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
 // PURCHASES PAGE (Köp)
 // ============================================================
 const PURCHASE_COLORS = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ef4444", "#ec4899", "#14b8a6", "#f97316"];
-const PURCHASE_ICONS = ["🛒", "🖥", "📱", "🎮", "🚗", "🏠", "👟", "🎁", "🔧", "🎵", "📚", "✈️", "🍕", "💻", "⌚"];
+const DEFAULT_PURCHASE_ICONS = ["🛒", "🖥", "📱", "🎮", "🚗", "🏠", "👟", "🎁", "🔧", "🎵", "📚", "✈️", "🍕", "💻", "⌚"];
 const PURCHASE_CATEGORIES = ["Teknik", "Hem", "Fordon", "Nöje", "Kläder", "Hälsa", "Övrigt"];
 
-function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {} }) {
+function PurchasesPage({ purchases, setPurchases, canEdit, pushUndo = () => {}, appTexts = {} }) {
+  const PURCHASE_ICONS = getAllIcons(DEFAULT_PURCHASE_ICONS, appTexts);
   const [showAdd, setShowAdd] = useState(false);
   const [editPurchase, setEditPurchase] = useState(null);
   const [imagePickerFor, setImagePickerFor] = useState(null); // "edit" | "new"
@@ -6431,6 +6440,7 @@ function AdminPage({ users, setUsers, expenses, setExpenses, history, pageVisibi
     { id: "users",    label: "👥 Användare" },
     { id: "texts",    label: "✏️ Apptexter" },
     { id: "lontyper", label: "🛡 Löntyper" },
+    { id: "emojis",   label: "😀 Emojis" },
     { id: "statuses", label: "🎨 Statusar" },
     { id: "log",      label: "📋 Aktivitetslogg" },
     { id: "settings", label: "⚙️ Inställningar" },
@@ -6709,6 +6719,63 @@ function AdminPage({ users, setUsers, expenses, setExpenses, history, pageVisibi
           </Card>
         </div>
       )}
+
+      {/* ── EMOJIS TAB ── */}
+      {tab === "emojis" && (() => {
+        const customEmojis = appTexts.customEmojis || [];
+        const [newEmoji, setNewEmojiLocal] = [undefined, undefined]; // placeholder
+        return (
+          <Card>
+            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>😀 Anpassade emojis</div>
+            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 20 }}>Lägg till egna emojis som kan användas som ikoner i Mål, Köp och andra sektioner.</div>
+
+            {/* Current custom emojis */}
+            {customEmojis.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Dina emojis ({customEmojis.length})</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {customEmojis.map((emoji, i) => (
+                    <div key={i} style={{ position: "relative", display: "inline-flex" }}>
+                      <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--bg2)", border: "2px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>{emoji}</div>
+                      <button onClick={() => setAppTexts(t => ({ ...t, customEmojis: (t.customEmojis || []).filter((_, j) => j !== i) }))}
+                        style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "#ef4444", color: "#fff", border: "none", fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Add new emoji */}
+            <div style={{ background: "var(--bg2)", borderRadius: 14, padding: "16px 20px", border: "1px solid var(--border)" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text2)", marginBottom: 12 }}>+ Lägg till emoji</div>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <input id="admin-new-emoji" maxLength={4} placeholder="🎯" style={{ width: 70, textAlign: "center", fontSize: 28, background: "var(--card)", border: "1.5px solid var(--border)", borderRadius: 10, padding: "8px", outline: "none", fontFamily: "inherit" }} />
+                <button onClick={() => {
+                  const input = document.getElementById("admin-new-emoji");
+                  const val = input?.value?.trim();
+                  if (!val) return;
+                  if ((appTexts.customEmojis || []).includes(val)) return;
+                  setAppTexts(t => ({ ...t, customEmojis: [...(t.customEmojis || []), val] }));
+                  if (input) input.value = "";
+                }} className="btn btn-primary" style={{ fontSize: 13, padding: "10px 20px" }}>Lägg till</button>
+              </div>
+              <div style={{ marginTop: 10, fontSize: 12, color: "var(--text2)" }}>
+                💡 Skriv eller klistra in en emoji ovan. Den blir tillgänglig i alla ikonväljare.
+              </div>
+            </div>
+
+            {/* Preview: current full icon set */}
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Förhandsgranskning — alla tillgängliga ikoner</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {getAllIcons(DEFAULT_GOAL_ICONS, appTexts).map((icon, i) => (
+                  <div key={i} style={{ width: 38, height: 38, borderRadius: 10, background: customEmojis.includes(icon) ? "#3b82f620" : "var(--bg2)", border: `2px solid ${customEmojis.includes(icon) ? "#3b82f6" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{icon}</div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* ── STATUSES TAB ── */}
       {tab === "statuses" && (() => {
@@ -7013,6 +7080,32 @@ function AdminPage({ users, setUsers, expenses, setExpenses, history, pageVisibi
                       </div>
                     </div>
                     <Toggle checked={isOn} onChange={val => setAppTexts(t => ({ ...t, dashboardCards: { hero: true, salary: true, debts: true, goals: true, savings: true, spartips: true, wishes: true, ...(t.dashboardCards || {}), [card.key]: val } }))} />
+                  </div>
+                );
+              })}
+            </Card>
+
+            <Card>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>🎯 Mål — Synliga sektioner</div>
+              <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16 }}>Välj vilka delar av målkorten som visas som standard</div>
+              {[
+                { key: "milestones", icon: "🏁", label: "Milstolpar",       desc: "25%, 50%, 75% progress-prickar" },
+                { key: "deposit",    icon: "💰", label: "Sätt in pengar",   desc: "Knappar för insättning/uttag" },
+                { key: "timeline",   icon: "📈", label: "Tillväxtkurva",    desc: "6-månaders prognos och klart-datum" },
+                { key: "category",   icon: "🏷",  label: "Kategori",        desc: "Kategori-badge på korten" },
+              ].map(section => {
+                const gs = appTexts.goalSections || {};
+                const isOn = gs[section.key] !== false;
+                return (
+                  <div key={section.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                      <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>{section.icon}</span>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{section.label}</div>
+                        <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 1 }}>{section.desc}</div>
+                      </div>
+                    </div>
+                    <Toggle checked={isOn} onChange={val => setAppTexts(t => ({ ...t, goalSections: { ...(t.goalSections || {}), [section.key]: val } }))} />
                   </div>
                 );
               })}
