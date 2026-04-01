@@ -4710,7 +4710,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {}, appTexts = {
                       </div>
                     ) : <>
                     {/* Milestone dots */}
-                    <div style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center" }}>
+                    {showMilestones && <div style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center" }}>
                       <span style={{ fontSize: 11, color: "var(--text2)" }}>Milstolpar:</span>
                       {milestones.map(m => (
                         <div key={m.pct} style={{ display: "flex", alignItems: "center", gap: 3 }}>
@@ -4721,7 +4721,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {}, appTexts = {
                         </div>
                       ))}
                       <span style={{ fontSize: 10, color: "var(--text2)", marginLeft: "auto" }}>🏁 100%</span>
-                    </div>
+                    </div>}
 
                     {/* Progress bar */}
                     <div style={{ marginBottom: 12 }}>
