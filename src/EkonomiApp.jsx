@@ -6440,6 +6440,7 @@ function AdminPage({ users, setUsers, expenses, setExpenses, history, pageVisibi
     { id: "users",    label: "👥 Användare" },
     { id: "texts",    label: "✏️ Apptexter" },
     { id: "lontyper", label: "🛡 Löntyper" },
+    { id: "emojis",   label: "😀 Emojis" },
     { id: "statuses", label: "🎨 Statusar" },
     { id: "log",      label: "📋 Aktivitetslogg" },
     { id: "settings", label: "⚙️ Inställningar" },
