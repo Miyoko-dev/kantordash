@@ -4744,7 +4744,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {}, appTexts = {
                     </>}
 
                     {/* Growth mini-chart (only if monthly deposit set & active) */}
-                    {goal.monthlyActive && monthly > 0 && chartPoints.length > 1 && (
+                    {showTimeline && goal.monthlyActive && monthly > 0 && chartPoints.length > 1 && (
                       <div style={{ background: "var(--bg2)", borderRadius: 12, padding: "10px 12px", marginBottom: 10 }}>
                         <div style={{ fontSize: 10, color: "var(--text2)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>📈 Tillväxt nästa 6 månader</div>
                         <svg width="100%" viewBox={`0 0 ${chartW} ${chartH + 16}`} style={{ overflow: "visible" }}>
