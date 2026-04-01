@@ -4015,8 +4015,10 @@ const INITIAL_GOALS = [
 ];
 
 const GOAL_CATEGORIES = ["Nöje", "Resor", "Teknik", "Hälsa", "Hem", "Övrigt"];
-const GOAL_ICONS = ["🎬", "🗼", "💻", "🏖", "🎮", "🚗", "🏠", "📚", "🎵", "💪", "✈️", "🍕", "👟", "🎁", "🐶"];
+const DEFAULT_GOAL_ICONS = ["🎬", "🗼", "💻", "🏖", "🎮", "🚗", "🏠", "📚", "🎵", "💪", "✈️", "🍕", "👟", "🎁", "🐶"];
 const GOAL_COLORS = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ef4444", "#ec4899", "#14b8a6", "#f97316"];
+function getCustomIcons(appTexts) { return appTexts?.customEmojis || []; }
+function getAllIcons(defaults, appTexts) { return [...defaults, ...getCustomIcons(appTexts)]; }
 
 function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
   const [showAdd, setShowAdd] = useState(false);
