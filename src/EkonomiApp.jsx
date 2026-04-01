@@ -6720,6 +6720,63 @@ function AdminPage({ users, setUsers, expenses, setExpenses, history, pageVisibi
         </div>
       )}
 
+      {/* ── EMOJIS TAB ── */}
+      {tab === "emojis" && (() => {
+        const customEmojis = appTexts.customEmojis || [];
+        const [newEmoji, setNewEmojiLocal] = [undefined, undefined]; // placeholder
+        return (
+          <Card>
+            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>😀 Anpassade emojis</div>
+            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 20 }}>Lägg till egna emojis som kan användas som ikoner i Mål, Köp och andra sektioner.</div>
+
+            {/* Current custom emojis */}
+            {customEmojis.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Dina emojis ({customEmojis.length})</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {customEmojis.map((emoji, i) => (
+                    <div key={i} style={{ position: "relative", display: "inline-flex" }}>
+                      <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--bg2)", border: "2px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>{emoji}</div>
+                      <button onClick={() => setAppTexts(t => ({ ...t, customEmojis: (t.customEmojis || []).filter((_, j) => j !== i) }))}
+                        style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "#ef4444", color: "#fff", border: "none", fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Add new emoji */}
+            <div style={{ background: "var(--bg2)", borderRadius: 14, padding: "16px 20px", border: "1px solid var(--border)" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text2)", marginBottom: 12 }}>+ Lägg till emoji</div>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <input id="admin-new-emoji" maxLength={4} placeholder="🎯" style={{ width: 70, textAlign: "center", fontSize: 28, background: "var(--card)", border: "1.5px solid var(--border)", borderRadius: 10, padding: "8px", outline: "none", fontFamily: "inherit" }} />
+                <button onClick={() => {
+                  const input = document.getElementById("admin-new-emoji");
+                  const val = input?.value?.trim();
+                  if (!val) return;
+                  if ((appTexts.customEmojis || []).includes(val)) return;
+                  setAppTexts(t => ({ ...t, customEmojis: [...(t.customEmojis || []), val] }));
+                  if (input) input.value = "";
+                }} className="btn btn-primary" style={{ fontSize: 13, padding: "10px 20px" }}>Lägg till</button>
+              </div>
+              <div style={{ marginTop: 10, fontSize: 12, color: "var(--text2)" }}>
+                💡 Skriv eller klistra in en emoji ovan. Den blir tillgänglig i alla ikonväljare.
+              </div>
+            </div>
+
+            {/* Preview: current full icon set */}
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Förhandsgranskning — alla tillgängliga ikoner</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {getAllIcons(DEFAULT_GOAL_ICONS, appTexts).map((icon, i) => (
+                  <div key={i} style={{ width: 38, height: 38, borderRadius: 10, background: customEmojis.includes(icon) ? "#3b82f620" : "var(--bg2)", border: `2px solid ${customEmojis.includes(icon) ? "#3b82f6" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{icon}</div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        );
+      })()}
+
       {/* ── STATUSES TAB ── */}
       {tab === "statuses" && (() => {
         const PRESET_ICONS = ["✅","⏳","🔄","🚫","💰","📌","⚡","🎯","🔒","📋","❌","✓"];
