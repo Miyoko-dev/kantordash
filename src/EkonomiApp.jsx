@@ -4803,7 +4803,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {}, appTexts = {
                     )}
 
                     {/* Action buttons */}
-                    {canEdit && (
+                    {showDeposit && canEdit && (
                       adjustGoalId === goal.id ? (
                         <div style={{ background: "var(--bg2)", borderRadius: 12, padding: 12, border: "1px solid var(--border)" }}>
                           <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
