@@ -4020,7 +4020,13 @@ const GOAL_COLORS = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ef4444", "#ec
 function getCustomIcons(appTexts) { return appTexts?.customEmojis || []; }
 function getAllIcons(defaults, appTexts) { return [...defaults, ...getCustomIcons(appTexts)]; }
 
-function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {} }) {
+function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {}, appTexts = {} }) {
+  const GOAL_ICONS = getAllIcons(DEFAULT_GOAL_ICONS, appTexts);
+  const gs = appTexts.goalSections || {};
+  const showMilestones = gs.milestones !== false;
+  const showDeposit = gs.deposit !== false;
+  const showTimeline = gs.timeline !== false;
+  const showCategory = gs.category !== false;
   const [showAdd, setShowAdd] = useState(false);
   const [adjustGoalId, setAdjustGoalId] = useState(null);
   const [adjustMode, setAdjustMode] = useState("add");
