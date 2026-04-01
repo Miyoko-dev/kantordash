@@ -4683,7 +4683,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {}, appTexts = {
                           <div style={{ fontSize: 15, fontWeight: 800 }}>{goal.name}</div>
                           {goal.description && <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 1 }}>{goal.description}</div>}
                           <div style={{ display: "flex", gap: 5, marginTop: 3, alignItems: "center" }}>
-                            <span style={{ fontSize: 11, background: goal.color + "20", color: goal.color, borderRadius: 99, padding: "1px 8px", fontWeight: 700 }}>{goal.category}</span>
+                            {showCategory && <span style={{ fontSize: 11, background: goal.color + "20", color: goal.color, borderRadius: 99, padding: "1px 8px", fontWeight: 700 }}>{goal.category}</span>}
                             {/* Free badge */}
                             {goal.isFree && (
                               <span style={{ fontSize: 11, background: "#d1fae5", color: "#059669", borderRadius: 99, padding: "1px 8px", fontWeight: 700 }}>🆓 Gratis</span>
