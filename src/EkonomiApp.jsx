@@ -4016,7 +4016,541 @@ function ImageSearchPicker({ onSelect, onClose, accentColor = "#3b82f6" }) {
   );
 }
 
-const INITIAL_GOALS = [
+// ============================================================
+// TRAVEL GOALS PAGE
+// ============================================================
+const TRAVEL_SECTIONS = [
+  { key: "flyg", icon: "✈️", label: "Flyg" },
+  { key: "hotell", icon: "🏨", label: "Hotell" },
+  { key: "mat", icon: "🍽", label: "Mat" },
+  { key: "aktiviteter", icon: "🎯", label: "Aktiviteter" },
+  { key: "ovrigt", icon: "📦", label: "Övrigt" },
+];
+const TRAVEL_BUDGET_PRESETS = [
+  { key: "budget", label: "Budget / Billig", icon: "💰", color: "#10b981" },
+  { key: "standard", label: "Standard", icon: "⭐", color: "#3b82f6" },
+  { key: "lyx", label: "Lyx / Dyr", icon: "💎", color: "#8b5cf6" },
+];
+const TRAVEL_COLORS = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ef4444", "#ec4899", "#14b8a6", "#f97316"];
+
+function TravelGoalsPage({ travelGoals, setTravelGoals, canEdit, pushUndo = () => {}, appTexts = {} }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [newTrip, setNewTrip] = useState({ name: "", destination: "", description: "", color: "#3b82f6", icon: "✈️", image: null, imageOffsetY: 50 });
+  const [openTripId, setOpenTripId] = useState(null);
+  const [activeBudgetKey, setActiveBudgetKey] = useState(null);
+  const [editItemModal, setEditItemModal] = useState(null); // { tripId, budgetKey, sectionKey, itemIndex? }
+  const [editItem, setEditItem] = useState({});
+  const [addBudgetModal, setAddBudgetModal] = useState(null); // tripId
+  const [newBudget, setNewBudget] = useState({ key: "", label: "", icon: "⭐", color: "#3b82f6" });
+  const [imagePickerFor, setImagePickerFor] = useState(null);
+  const [editTripModal, setEditTripModal] = useState(null);
+  const ICONS = getAllIcons(["✈️", "🏖", "🗼", "🌴", "🏔", "🌊", "🗺", "🚢", "🏝", "🎒", "🌍", "🇫🇷", "🇪🇸", "🇮🇹", "🇬🇷", "🇹🇭", "🇯🇵", "🇺🇸"], appTexts);
+
+  function addTrip() {
+    if (!newTrip.name) return;
+    const trip = {
+      id: Date.now(),
+      ...newTrip,
+      budgets: TRAVEL_BUDGET_PRESETS.map(p => ({
+        key: p.key, label: p.label, icon: p.icon, color: p.color, selected: p.key === "standard",
+        sections: TRAVEL_SECTIONS.reduce((acc, s) => { acc[s.key] = []; return acc; }, {}),
+      })),
+      createdAt: new Date().toISOString(),
+    };
+    setTravelGoals(g => [...g, trip]);
+    setNewTrip({ name: "", destination: "", description: "", color: "#3b82f6", icon: "✈️", image: null, imageOffsetY: 50 });
+    setShowAdd(false);
+    setOpenTripId(trip.id);
+    setActiveBudgetKey("standard");
+  }
+
+  function deleteTrip(id) { pushUndo("Resemål"); setTravelGoals(g => g.filter(t => t.id !== id)); if (openTripId === id) setOpenTripId(null); }
+
+  function duplicateBudget(tripId, budgetKey) {
+    setTravelGoals(gs => gs.map(t => {
+      if (t.id !== tripId) return t;
+      const src = t.budgets.find(b => b.key === budgetKey);
+      if (!src) return t;
+      const newKey = budgetKey + "_copy_" + Date.now();
+      const copy = JSON.parse(JSON.stringify({ ...src, key: newKey, label: src.label + " (kopia)", selected: false }));
+      return { ...t, budgets: [...t.budgets, copy] };
+    }));
+  }
+
+  function deleteBudget(tripId, budgetKey) {
+    pushUndo("Resemål");
+    setTravelGoals(gs => gs.map(t => {
+      if (t.id !== tripId) return t;
+      return { ...t, budgets: t.budgets.filter(b => b.key !== budgetKey) };
+    }));
+    setActiveBudgetKey(null);
+  }
+
+  function selectBudget(tripId, budgetKey) {
+    setTravelGoals(gs => gs.map(t => {
+      if (t.id !== tripId) return t;
+      return { ...t, budgets: t.budgets.map(b => ({ ...b, selected: b.key === budgetKey })) };
+    }));
+  }
+
+  function addItem(tripId, budgetKey, sectionKey) {
+    setEditItemModal({ tripId, budgetKey, sectionKey });
+    setEditItem({ title: "", price: "", link: "", mapsLink: "", description: "", image: null });
+  }
+
+  function saveItem() {
+    if (!editItemModal) return;
+    const { tripId, budgetKey, sectionKey, itemIndex } = editItemModal;
+    setTravelGoals(gs => gs.map(t => {
+      if (t.id !== tripId) return t;
+      return { ...t, budgets: t.budgets.map(b => {
+        if (b.key !== budgetKey) return b;
+        const items = [...(b.sections[sectionKey] || [])];
+        const item = { ...editItem, price: parseFloat(editItem.price) || 0 };
+        if (itemIndex !== undefined) { items[itemIndex] = item; } else { items.push(item); }
+        return { ...b, sections: { ...b.sections, [sectionKey]: items } };
+      })};
+    }));
+    setEditItemModal(null);
+  }
+
+  function deleteItem(tripId, budgetKey, sectionKey, idx) {
+    setTravelGoals(gs => gs.map(t => {
+      if (t.id !== tripId) return t;
+      return { ...t, budgets: t.budgets.map(b => {
+        if (b.key !== budgetKey) return b;
+        return { ...b, sections: { ...b.sections, [sectionKey]: b.sections[sectionKey].filter((_, i) => i !== idx) } };
+      })};
+    }));
+  }
+
+  function getBudgetTotal(budget) {
+    return TRAVEL_SECTIONS.reduce((sum, s) => {
+      return sum + (budget.sections[s.key] || []).reduce((ss, item) => ss + (parseFloat(item.price) || 0), 0);
+    }, 0);
+  }
+
+  const openTrip = travelGoals.find(t => t.id === openTripId);
+  const activeBudget = openTrip?.budgets.find(b => b.key === activeBudgetKey);
+
+  const iStyle = { width: "100%", boxSizing: "border-box", background: "var(--bg2)", border: "1.5px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 14, color: "var(--text)", fontFamily: "inherit", outline: "none" };
+  const lStyle = { fontSize: 11, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 5 };
+
+  return (
+    <div className="fadeIn">
+      {/* Image picker */}
+      {imagePickerFor && (
+        <ImageSearchPicker accentColor="#3b82f6" onClose={() => setImagePickerFor(null)}
+          onSelect={url => {
+            if (imagePickerFor === "new") setNewTrip(n => ({ ...n, image: url, imageOffsetY: 50 }));
+            else if (imagePickerFor === "editTrip" && editTripModal) setEditTripModal(t => ({ ...t, image: url, imageOffsetY: 50 }));
+            else if (imagePickerFor === "item") setEditItem(i => ({ ...i, image: url }));
+            setImagePickerFor(null);
+          }}
+        />
+      )}
+
+      {/* EDIT ITEM MODAL */}
+      {editItemModal && (
+        <div className="modal-overlay" onClick={() => setEditItemModal(null)}>
+          <div onClick={e => e.stopPropagation()} className="modal" style={{ maxWidth: 500 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>
+              {editItemModal.itemIndex !== undefined ? "Redigera" : "Lägg till"} {TRAVEL_SECTIONS.find(s => s.key === editItemModal.sectionKey)?.label || ""}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div><label style={lStyle}>Titel *</label><input value={editItem.title} onChange={e => setEditItem(i => ({ ...i, title: e.target.value }))} placeholder="t.ex. SAS Stockholm–Paris" style={iStyle} /></div>
+              <div><label style={lStyle}>Pris (kr)</label><input type="number" value={editItem.price} onChange={e => setEditItem(i => ({ ...i, price: e.target.value }))} placeholder="0" style={iStyle} /></div>
+              <div><label style={lStyle}>Länk (bokning/hemsida)</label><input value={editItem.link || ""} onChange={e => setEditItem(i => ({ ...i, link: e.target.value }))} placeholder="https://…" style={iStyle} /></div>
+              <div><label style={lStyle}>📍 Google Maps-länk</label><input value={editItem.mapsLink || ""} onChange={e => setEditItem(i => ({ ...i, mapsLink: e.target.value }))} placeholder="https://maps.google.com/…" style={iStyle} /></div>
+              <div><label style={lStyle}>Beskrivning</label><textarea value={editItem.description || ""} onChange={e => setEditItem(i => ({ ...i, description: e.target.value }))} rows={3} placeholder="Valfri beskrivning…" style={{ ...iStyle, resize: "vertical" }} /></div>
+              <div>
+                <label style={lStyle}>📷 Bild (valfritt)</label>
+                {editItem.image ? (
+                  <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", height: 100, border: "1px solid var(--border)" }}>
+                    <img src={editItem.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <button onClick={() => setEditItem(i => ({ ...i, image: null }))} style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", width: 22, height: 22, color: "#fff", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setImagePickerFor("item")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 10, border: "2px dashed var(--border)", background: "var(--bg2)", cursor: "pointer", color: "var(--text2)", fontSize: 13, fontWeight: 600, width: "100%", fontFamily: "inherit" }}>🔍 Sök bild…</button>
+                )}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+              <button onClick={() => setEditItemModal(null)} className="btn btn-ghost" style={{ flex: 1 }}>Avbryt</button>
+              <button onClick={saveItem} className="btn btn-primary" style={{ flex: 2 }} disabled={!editItem.title}>✓ Spara</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD BUDGET MODAL */}
+      {addBudgetModal && (
+        <div className="modal-overlay" onClick={() => setAddBudgetModal(null)}>
+          <div onClick={e => e.stopPropagation()} className="modal" style={{ maxWidth: 420 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>Lägg till budgetscenario</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div><label style={lStyle}>Namn *</label><input value={newBudget.label} onChange={e => setNewBudget(b => ({ ...b, label: e.target.value, key: e.target.value.toLowerCase().replace(/\s/g, "_") + "_" + Date.now() }))} placeholder="t.ex. Mellanbudget" style={iStyle} /></div>
+              <div><label style={lStyle}>Ikon</label><input value={newBudget.icon} onChange={e => setNewBudget(b => ({ ...b, icon: e.target.value }))} maxLength={4} style={{ ...iStyle, width: 60, textAlign: "center", fontSize: 20 }} /></div>
+              <div>
+                <label style={lStyle}>Färg</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {TRAVEL_COLORS.map(c => (
+                    <button key={c} onClick={() => setNewBudget(b => ({ ...b, color: c }))} style={{ width: newBudget.color === c ? 28 : 22, height: newBudget.color === c ? 28 : 22, borderRadius: "50%", background: c, border: `3px solid ${newBudget.color === c ? "var(--text)" : "transparent"}`, cursor: "pointer", transition: "all 0.15s" }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+              <button onClick={() => setAddBudgetModal(null)} className="btn btn-ghost" style={{ flex: 1 }}>Avbryt</button>
+              <button onClick={() => {
+                if (!newBudget.label) return;
+                setTravelGoals(gs => gs.map(t => {
+                  if (t.id !== addBudgetModal) return t;
+                  return { ...t, budgets: [...t.budgets, { ...newBudget, selected: false, sections: TRAVEL_SECTIONS.reduce((a, s) => { a[s.key] = []; return a; }, {}) }] };
+                }));
+                setActiveBudgetKey(newBudget.key);
+                setAddBudgetModal(null);
+                setNewBudget({ key: "", label: "", icon: "⭐", color: "#3b82f6" });
+              }} className="btn btn-primary" style={{ flex: 2 }} disabled={!newBudget.label}>✓ Skapa</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT TRIP MODAL */}
+      {editTripModal && (
+        <div className="modal-overlay" onClick={() => setEditTripModal(null)}>
+          <div onClick={e => e.stopPropagation()} className="modal" style={{ maxWidth: 500 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>Redigera resa</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div><label style={lStyle}>Namn</label><input value={editTripModal.name} onChange={e => setEditTripModal(t => ({ ...t, name: e.target.value }))} style={iStyle} /></div>
+              <div><label style={lStyle}>Destination</label><input value={editTripModal.destination || ""} onChange={e => setEditTripModal(t => ({ ...t, destination: e.target.value }))} style={iStyle} /></div>
+              <div><label style={lStyle}>Beskrivning</label><textarea value={editTripModal.description || ""} onChange={e => setEditTripModal(t => ({ ...t, description: e.target.value }))} rows={3} style={{ ...iStyle, resize: "vertical" }} /></div>
+              <div>
+                <label style={lStyle}>Ikon</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {ICONS.map(icon => (
+                    <button key={icon} onClick={() => setEditTripModal(t => ({ ...t, icon }))} style={{ width: 38, height: 38, borderRadius: 10, border: `2px solid ${editTripModal.icon === icon ? editTripModal.color : "transparent"}`, background: editTripModal.icon === icon ? editTripModal.color + "20" : "var(--bg2)", fontSize: 18, cursor: "pointer" }}>{icon}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label style={lStyle}>Färg</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {TRAVEL_COLORS.map(c => (
+                    <button key={c} onClick={() => setEditTripModal(t => ({ ...t, color: c }))} style={{ width: editTripModal.color === c ? 28 : 22, height: editTripModal.color === c ? 28 : 22, borderRadius: "50%", background: c, border: `3px solid ${editTripModal.color === c ? "var(--text)" : "transparent"}`, cursor: "pointer", transition: "all 0.15s" }} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label style={lStyle}>📷 Bild</label>
+                {editTripModal.image ? (
+                  <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", height: 100, border: "1px solid var(--border)" }}>
+                    <img src={editTripModal.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `center ${editTripModal.imageOffsetY ?? 50}%` }} />
+                    <button onClick={() => setEditTripModal(t => ({ ...t, image: null }))} style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", width: 22, height: 22, color: "#fff", cursor: "pointer", fontSize: 11 }}>✕</button>
+                    <button onClick={() => setImagePickerFor("editTrip")} style={{ position: "absolute", bottom: 4, right: 4, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: 8, padding: "3px 8px", color: "#fff", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>🔍 Byt</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setImagePickerFor("editTrip")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 10, border: "2px dashed var(--border)", background: "var(--bg2)", cursor: "pointer", color: "var(--text2)", fontSize: 13, fontWeight: 600, width: "100%", fontFamily: "inherit" }}>🔍 Sök bild…</button>
+                )}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+              <button onClick={() => setEditTripModal(null)} className="btn btn-ghost" style={{ flex: 1 }}>Avbryt</button>
+              <button onClick={() => {
+                pushUndo("Resemål");
+                setTravelGoals(gs => gs.map(t => t.id === editTripModal.id ? { ...t, ...editTripModal } : t));
+                setEditTripModal(null);
+              }} className="btn btn-primary" style={{ flex: 2 }}>✓ Spara</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HEADER */}
+      <div style={{ background: "linear-gradient(135deg, #0ea5e9, #3b82f6)", borderRadius: 20, padding: "24px 32px", marginBottom: 24, color: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div style={{ fontSize: 13, opacity: 0.75, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Resemål</div>
+          <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginTop: 4 }}>{travelGoals.length} {travelGoals.length === 1 ? "resa" : "resor"}</div>
+          <div style={{ fontSize: 14, opacity: 0.8, marginTop: 4 }}>Planera, jämför budgetar och boka din drömresa</div>
+        </div>
+        <div style={{ fontSize: 52, opacity: 0.3 }}>✈️</div>
+      </div>
+
+      {/* ADD BUTTON */}
+      {canEdit && !openTripId && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+          <button onClick={() => setShowAdd(true)} className="btn btn-primary">+ Ny resa</button>
+        </div>
+      )}
+
+      {/* CREATE TRIP MODAL */}
+      {showAdd && (
+        <div className="modal-overlay" onClick={() => setShowAdd(false)}>
+          <div onClick={e => e.stopPropagation()} className="modal" style={{ maxWidth: 500 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>✈️ Skapa ny resa</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div><label style={lStyle}>Namn *</label><input value={newTrip.name} onChange={e => setNewTrip(n => ({ ...n, name: e.target.value }))} placeholder="t.ex. Mallorca 2026" style={iStyle} /></div>
+              <div><label style={lStyle}>Destination</label><input value={newTrip.destination} onChange={e => setNewTrip(n => ({ ...n, destination: e.target.value }))} placeholder="t.ex. Spanien" style={iStyle} /></div>
+              <div><label style={lStyle}>Beskrivning</label><textarea value={newTrip.description} onChange={e => setNewTrip(n => ({ ...n, description: e.target.value }))} rows={2} placeholder="Vad är drömmen?" style={{ ...iStyle, resize: "vertical" }} /></div>
+              <div>
+                <label style={lStyle}>Ikon</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {ICONS.map(icon => (
+                    <button key={icon} onClick={() => setNewTrip(n => ({ ...n, icon }))} style={{ width: 38, height: 38, borderRadius: 10, border: `2px solid ${newTrip.icon === icon ? newTrip.color : "transparent"}`, background: newTrip.icon === icon ? newTrip.color + "20" : "var(--bg2)", fontSize: 18, cursor: "pointer" }}>{icon}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label style={lStyle}>Färg</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {TRAVEL_COLORS.map(c => (
+                    <button key={c} onClick={() => setNewTrip(n => ({ ...n, color: c }))} style={{ width: newTrip.color === c ? 28 : 22, height: newTrip.color === c ? 28 : 22, borderRadius: "50%", background: c, border: `3px solid ${newTrip.color === c ? "var(--text)" : "transparent"}`, cursor: "pointer", transition: "all 0.15s" }} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label style={lStyle}>📷 Bild (valfritt)</label>
+                {newTrip.image ? (
+                  <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", height: 100, border: "1px solid var(--border)" }}>
+                    <img src={newTrip.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <button onClick={() => setNewTrip(n => ({ ...n, image: null }))} style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", width: 22, height: 22, color: "#fff", cursor: "pointer", fontSize: 11 }}>✕</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setImagePickerFor("new")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 10, border: "2px dashed var(--border)", background: "var(--bg2)", cursor: "pointer", color: "var(--text2)", fontSize: 13, fontWeight: 600, width: "100%", fontFamily: "inherit" }}>🔍 Sök bild…</button>
+                )}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+              <button onClick={() => setShowAdd(false)} className="btn btn-ghost" style={{ flex: 1 }}>Avbryt</button>
+              <button onClick={addTrip} className="btn btn-primary" style={{ flex: 2 }} disabled={!newTrip.name}>✓ Skapa resa</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ TRIP LIST (when no trip is open) ══ */}
+      {!openTripId && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+          {travelGoals.map(trip => {
+            const selectedBudget = trip.budgets.find(b => b.selected) || trip.budgets[0];
+            const total = selectedBudget ? getBudgetTotal(selectedBudget) : 0;
+            const budgetTotals = trip.budgets.map(b => getBudgetTotal(b));
+            const minBudget = Math.min(...budgetTotals);
+            const maxBudget = Math.max(...budgetTotals);
+            return (
+              <Card key={trip.id} style={{ cursor: "pointer", overflow: "hidden", position: "relative" }} onClick={() => { setOpenTripId(trip.id); setActiveBudgetKey(selectedBudget?.key || trip.budgets[0]?.key); }}>
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: trip.color }} />
+                {trip.image && (
+                  <div style={{ margin: "-20px -24px 12px", overflow: "hidden", maxHeight: 120 }}>
+                    <img src={trip.image} alt={trip.name} style={{ width: "100%", objectFit: "cover", maxHeight: 120, display: "block", objectPosition: `center ${trip.imageOffsetY ?? 50}%` }} />
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 10, paddingTop: trip.image ? 0 : 8 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: trip.color + "20", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{trip.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800 }}>{trip.name}</div>
+                    {trip.destination && <div style={{ fontSize: 12, color: "var(--text2)" }}>📍 {trip.destination}</div>}
+                  </div>
+                </div>
+                {trip.description && <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 10, lineHeight: 1.5 }}>{trip.description}</div>}
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                  {trip.budgets.map(b => (
+                    <span key={b.key} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 99, background: b.selected ? b.color + "20" : "var(--bg2)", color: b.selected ? b.color : "var(--text2)", fontWeight: b.selected ? 700 : 500, border: `1px solid ${b.selected ? b.color + "40" : "var(--border)"}` }}>
+                      {b.icon} {b.label}: {getBudgetTotal(b).toLocaleString("sv-SE")} kr
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                  <span style={{ fontSize: 12, color: "var(--text2)" }}>{trip.budgets.length} budgetar</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: trip.color }}>{minBudget === maxBudget ? formatSEK(minBudget) : `${formatSEK(minBudget)} – ${formatSEK(maxBudget)}`}</span>
+                </div>
+              </Card>
+            );
+          })}
+          {travelGoals.length === 0 && (
+            <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px 20px", color: "var(--text2)" }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>✈️</div>
+              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>Inga resemål än</div>
+              <div style={{ fontSize: 13 }}>Skapa ditt första resemål och börja planera!</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══ TRIP DETAIL VIEW ══ */}
+      {openTrip && (() => {
+        const col = openTrip.color || "#3b82f6";
+        return (
+          <div>
+            {/* Back + Trip header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <button onClick={() => setOpenTripId(null)} className="btn btn-ghost" style={{ padding: "6px 12px" }}>← Tillbaka</button>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 28 }}>{openTrip.icon}</span>
+                  <div>
+                    <div style={{ fontSize: 20, fontWeight: 800 }}>{openTrip.name}</div>
+                    {openTrip.destination && <div style={{ fontSize: 13, color: "var(--text2)" }}>📍 {openTrip.destination}</div>}
+                  </div>
+                </div>
+              </div>
+              {canEdit && (
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={() => setEditTripModal({ ...openTrip })} className="btn btn-ghost" style={{ padding: "6px 12px" }}>✏️</button>
+                  <button onClick={() => deleteTrip(openTrip.id)} className="btn btn-danger" style={{ padding: "6px 12px" }}>🗑</button>
+                </div>
+              )}
+            </div>
+
+            {/* Budget tabs */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
+              {openTrip.budgets.map(b => {
+                const total = getBudgetTotal(b);
+                const isActive = activeBudgetKey === b.key;
+                return (
+                  <button key={b.key} onClick={() => setActiveBudgetKey(b.key)}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 18px", borderRadius: 14, border: `2px solid ${isActive ? b.color : "var(--border)"}`, background: isActive ? b.color + "15" : "var(--card)", cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>
+                    <span style={{ fontSize: 18 }}>{b.icon}</span>
+                    <div style={{ textAlign: "left" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: isActive ? b.color : "var(--text)" }}>{b.label}</div>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: isActive ? b.color : "var(--text2)" }}>{total.toLocaleString("sv-SE")} kr</div>
+                    </div>
+                    {b.selected && <span style={{ fontSize: 10, background: "#10b981", color: "#fff", borderRadius: 99, padding: "1px 7px", fontWeight: 800 }}>VALD</span>}
+                  </button>
+                );
+              })}
+              {canEdit && (
+                <button onClick={() => { setAddBudgetModal(openTrip.id); setNewBudget({ key: "", label: "", icon: "⭐", color: "#3b82f6" }); }}
+                  style={{ padding: "10px 14px", borderRadius: 14, border: "2px dashed var(--border)", background: "transparent", cursor: "pointer", color: "var(--text2)", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }}>+ Budget</button>
+              )}
+            </div>
+
+            {/* Budget comparison summary */}
+            {openTrip.budgets.length > 1 && (
+              <Card style={{ marginBottom: 20, padding: "16px 20px" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text2)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>🧮 Jämför budgetar</div>
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(openTrip.budgets.length, 4)}, 1fr)`, gap: 12 }}>
+                  {openTrip.budgets.map(b => {
+                    const total = getBudgetTotal(b);
+                    return (
+                      <div key={b.key} style={{ textAlign: "center", padding: "12px 8px", borderRadius: 12, background: b.selected ? b.color + "12" : "var(--bg2)", border: `1.5px solid ${b.selected ? b.color + "40" : "var(--border)"}` }}>
+                        <div style={{ fontSize: 20, marginBottom: 4 }}>{b.icon}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: b.color, marginBottom: 4 }}>{b.label}</div>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text)" }}>{total.toLocaleString("sv-SE")} kr</div>
+                        {canEdit && !b.selected && (
+                          <button onClick={() => selectBudget(openTrip.id, b.key)} style={{ marginTop: 6, fontSize: 10, background: b.color + "18", color: b.color, border: "none", borderRadius: 99, padding: "3px 10px", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}>Välj ✓</button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+
+            {/* Active budget detail */}
+            {activeBudget && (
+              <div>
+                {/* Budget action bar */}
+                {canEdit && (
+                  <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+                    {!activeBudget.selected && (
+                      <button onClick={() => selectBudget(openTrip.id, activeBudget.key)} className="btn" style={{ background: "#10b981", color: "#fff", border: "none" }}>⭐ Markera som vald</button>
+                    )}
+                    <button onClick={() => duplicateBudget(openTrip.id, activeBudget.key)} className="btn btn-ghost">📋 Duplicera</button>
+                    {openTrip.budgets.length > 1 && (
+                      <button onClick={() => { deleteBudget(openTrip.id, activeBudget.key); setActiveBudgetKey(openTrip.budgets.find(b => b.key !== activeBudget.key)?.key); }} className="btn btn-danger">🗑 Ta bort</button>
+                    )}
+                  </div>
+                )}
+
+                {/* Sections */}
+                {TRAVEL_SECTIONS.map(section => {
+                  const items = activeBudget.sections[section.key] || [];
+                  const sectionTotal = items.reduce((s, i) => s + (parseFloat(i.price) || 0), 0);
+                  return (
+                    <Card key={section.key} style={{ marginBottom: 16 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ fontSize: 22 }}>{section.icon}</span>
+                          <span style={{ fontSize: 15, fontWeight: 800 }}>{section.label}</span>
+                          <span style={{ fontSize: 12, color: "var(--text2)" }}>({items.length})</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ fontSize: 15, fontWeight: 800, color: activeBudget.color }}>{sectionTotal.toLocaleString("sv-SE")} kr</span>
+                          {canEdit && (
+                            <button onClick={() => addItem(openTrip.id, activeBudget.key, section.key)} className="btn btn-primary" style={{ padding: "4px 12px", fontSize: 12 }}>+ Lägg till</button>
+                          )}
+                        </div>
+                      </div>
+                      {items.length === 0 && (
+                        <div style={{ textAlign: "center", padding: "16px 0", color: "var(--text2)", fontSize: 13 }}>Inga poster än</div>
+                      )}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {items.map((item, idx) => (
+                          <div key={idx} style={{ display: "flex", gap: 12, padding: "12px 14px", background: "var(--bg2)", borderRadius: 12, border: "1px solid var(--border)", alignItems: "flex-start" }}>
+                            {item.image && (
+                              <div style={{ width: 60, height: 60, borderRadius: 10, overflow: "hidden", flexShrink: 0 }}>
+                                <img src={item.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              </div>
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{item.title}</div>
+                              {item.description && <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 4, lineHeight: 1.5 }}>{item.description}</div>}
+                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                {item.link && (
+                                  <a href={item.link.startsWith("http") ? item.link : "https://" + item.link} target="_blank" rel="noopener noreferrer"
+                                    style={{ fontSize: 11, color: activeBudget.color, textDecoration: "none", display: "flex", alignItems: "center", gap: 3 }}>🔗 Bokning</a>
+                                )}
+                                {item.mapsLink && (
+                                  <a href={item.mapsLink.startsWith("http") ? item.mapsLink : "https://" + item.mapsLink} target="_blank" rel="noopener noreferrer"
+                                    style={{ fontSize: 11, color: "#10b981", textDecoration: "none", display: "flex", alignItems: "center", gap: 3 }}>📍 Maps</a>
+                                )}
+                              </div>
+                            </div>
+                            <div style={{ textAlign: "right", flexShrink: 0 }}>
+                              <div style={{ fontSize: 15, fontWeight: 800, color: activeBudget.color }}>{(parseFloat(item.price) || 0).toLocaleString("sv-SE")} kr</div>
+                              {canEdit && (
+                                <div style={{ display: "flex", gap: 4, marginTop: 6, justifyContent: "flex-end" }}>
+                                  <button onClick={() => { setEditItemModal({ tripId: openTrip.id, budgetKey: activeBudget.key, sectionKey: section.key, itemIndex: idx }); setEditItem({ ...item }); }}
+                                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, opacity: 0.5, padding: 0 }}>✏️</button>
+                                  <button onClick={() => deleteItem(openTrip.id, activeBudget.key, section.key, idx)}
+                                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#ef4444", opacity: 0.5, padding: 0 }}>✕</button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  );
+                })}
+
+                {/* Grand total */}
+                <Card style={{ background: `linear-gradient(135deg, ${activeBudget.color}12, ${activeBudget.color}06)`, border: `2px solid ${activeBudget.color}30` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Totalt — {activeBudget.label}</div>
+                      <div style={{ fontSize: 10, color: "var(--text2)", marginTop: 2 }}>
+                        {TRAVEL_SECTIONS.map(s => {
+                          const t = (activeBudget.sections[s.key] || []).reduce((sum, i) => sum + (parseFloat(i.price) || 0), 0);
+                          return t > 0 ? `${s.icon} ${t.toLocaleString("sv-SE")} kr` : null;
+                        }).filter(Boolean).join("  •  ")}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 28, fontWeight: 800, color: activeBudget.color }}>{getBudgetTotal(activeBudget).toLocaleString("sv-SE")} kr</div>
+                  </div>
+                </Card>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
+
   { id: 1, name: "Bio-kväll", description: "Spara till en biokväll med popcorn", target: 100, saved: 60, color: "#f59e0b", icon: "🎬", category: "Nöje", monthlyDeposit: 0, monthlyActive: false, streak: 0, lastDepositMonth: null, milestonesSeen: [] },
   { id: 2, name: "Paris 2026", description: "Semester i Paris – flyg + hotell", target: 5000, saved: 1200, color: "#3b82f6", icon: "🗼", category: "Resor", monthlyDeposit: 500, monthlyActive: true, streak: 3, lastDepositMonth: null, milestonesSeen: [25] },
   { id: 3, name: "Ny laptop", description: "MacBook för jobb och studier", target: 15000, saved: 4500, color: "#8b5cf6", icon: "💻", category: "Teknik", monthlyDeposit: 1000, monthlyActive: true, streak: 2, lastDepositMonth: null, milestonesSeen: [25] },
