@@ -868,6 +868,7 @@ export default function App() {
           {page === "debts" && <DebtsPage debts={debts} setDebts={setDebts} canEdit={canEdit} updateDebt={updateDebt} pushUndo={pushUndo} expenses={expenses} />}
           {page === "savings" && <SavingsPage savingsAccounts={savingsAccounts} setSavingsAccounts={setSavingsAccounts} assets={assets} setAssets={setAssets} canEdit={canEdit} pushUndo={pushUndo} />}
           {page === "goals" && <GoalsPage goals={goals} setGoals={setGoals} canEdit={canEdit} pushUndo={pushUndo} appTexts={appTexts} />}
+          {page === "travel" && <TravelGoalsPage travelGoals={travelGoals} setTravelGoals={setTravelGoals} canEdit={canEdit} pushUndo={pushUndo} appTexts={appTexts} />}
           {page === "purchases" && <PurchasesPage purchases={purchases} setPurchases={setPurchases} canEdit={canEdit} pushUndo={pushUndo} appTexts={appTexts} />}
           {page === "forecast" && <ForecastPage income={income} expenses={expenses} debts={debts} extraIncome={extraIncome} beredskap={beredskap} futureSalaries={futureSalaries} plannedExpenses={plannedExpenses} monthSchedule={monthSchedule} appTexts={appTexts} recurringExpenses={recurringExpenses} purchases={purchases} />}
           {page === "ai" && <AIPage messages={aiMessages} setMessages={setAiMessages} income={totalIncome} expenses={totalExpenses} debts={totalDebts} netWorth={netWorth} healthScore={healthScore} leftover={leftover} allDebts={debts} allExpenses={expenses} appTexts={appTexts} setPage={setPage} goals={goals} />}
