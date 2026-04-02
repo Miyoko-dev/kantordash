@@ -1124,6 +1124,7 @@ function MobileBottomNav({ page, setPage, user, pageVisibility, setUser }) {
     { id: "debts",     icon: "📉", label: "Skulder" },
     { id: "savings",   icon: "🏦", label: "Spar" },
     { id: "goals",     icon: "🎯", label: "Mål" },
+    { id: "travel",    icon: "✈️", label: "Resa" },
     { id: "forecast",  icon: "📊", label: "Prognos" },
     { id: "history",   icon: "📅", label: "Historik" },
     { id: "calculator",icon: "🧮", label: "Kalkyl" },
