@@ -297,7 +297,7 @@ export default function App() {
   const [goals, setGoals] = useState(() => loadLS("goals", INITIAL_GOALS));
   const [history, setHistory] = useState(() => loadLS("history", []));
   const [pageVisibility, setPageVisibility] = useState(() => loadLS("pageVisibility", {
-    budget: true, income: true, debts: true, savings: true, goals: true, purchases: true, forecast: true, ai: true, history: true, calculator: true,
+    budget: true, income: true, debts: true, savings: true, goals: true, travel: true, purchases: true, forecast: true, ai: true, history: true, calculator: true,
   }));
   const [monthlyHistory, setMonthlyHistory] = useState(() => loadLS("monthlyHistory", []));
 
