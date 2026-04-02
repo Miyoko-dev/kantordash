@@ -903,6 +903,7 @@ const PAGE_LABELS = {
   debts: "Skulder",
   savings: "Sparande",
   goals: "Mål",
+  travel: "Resemål",
   forecast: "Prognos",
   ai: "AI-assistent",
   history: "Månadshistorik",
