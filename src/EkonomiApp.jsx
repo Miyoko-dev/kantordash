@@ -458,6 +458,7 @@ export default function App() {
       if (cloudData.plannedExpenses) setPlannedExpenses(cloudData.plannedExpenses);
       if (cloudData.recurringExpenses) setRecurringExpenses(cloudData.recurringExpenses);
       if (cloudData.purchases) setPurchases(cloudData.purchases);
+      if (cloudData.travelGoals) setTravelGoals(cloudData.travelGoals);
       if (cloudData.wishes) setWishes(cloudData.wishes);
       if (cloudData.categoryMeta) setCategoryMeta(cloudData.categoryMeta);
       if (cloudData.aiMessages) setAiMessages(cloudData.aiMessages);
