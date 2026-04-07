@@ -4549,8 +4549,7 @@ function TravelGoalsPage({ travelGoals, setTravelGoals, canEdit, pushUndo = () =
     </div>
   );
 }
-
-
+const DEFAULT_GOALS_DATA = [
   { id: 1, name: "Bio-kväll", description: "Spara till en biokväll med popcorn", target: 100, saved: 60, color: "#f59e0b", icon: "🎬", category: "Nöje", monthlyDeposit: 0, monthlyActive: false, streak: 0, lastDepositMonth: null, milestonesSeen: [] },
   { id: 2, name: "Paris 2026", description: "Semester i Paris – flyg + hotell", target: 5000, saved: 1200, color: "#3b82f6", icon: "🗼", category: "Resor", monthlyDeposit: 500, monthlyActive: true, streak: 3, lastDepositMonth: null, milestonesSeen: [25] },
   { id: 3, name: "Ny laptop", description: "MacBook för jobb och studier", target: 15000, saved: 4500, color: "#8b5cf6", icon: "💻", category: "Teknik", monthlyDeposit: 1000, monthlyActive: true, streak: 2, lastDepositMonth: null, milestonesSeen: [25] },
@@ -4569,6 +4568,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {}, appTexts = {
   const showDeposit = gs.deposit !== false;
   const showTimeline = gs.timeline !== false;
   const showCategory = gs.category !== false;
+  const simpleMode = gs.displayMode === "simple";
   const [showAdd, setShowAdd] = useState(false);
   const [adjustGoalId, setAdjustGoalId] = useState(null);
   const [adjustMode, setAdjustMode] = useState("add");
@@ -5249,6 +5249,13 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {}, appTexts = {
                       <div style={{ background: "#d1fae5", border: "1px solid #a7f3d0", borderRadius: 10, padding: "10px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ fontSize: 18 }}>🆓</span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: "#059669" }}>Gratis aktivitet – inget sparande behövs!</span>
+                      </div>
+                    ) : simpleMode ? (
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ fontSize: 28, fontWeight: 900, color: goal.color, letterSpacing: "-0.02em" }}>{formatSEK(goal.target)}</div>
+                        {goal.saved > 0 && (
+                          <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 4 }}>💰 Sparat: {formatSEK(goal.saved)} · Kvar: {formatSEK(remaining)}</div>
+                        )}
                       </div>
                     ) : <>
                     {/* Milestone dots */}
@@ -7630,6 +7637,25 @@ function AdminPage({ users, setUsers, expenses, setExpenses, history, pageVisibi
             <Card>
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>🎯 Mål — Synliga sektioner</div>
               <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16 }}>Välj vilka delar av målkorten som visas som standard</div>
+              {/* Display mode toggle */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid var(--border)", marginBottom: 4 }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>👁</span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>Visningsläge</div>
+                    <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 1 }}>Enkel = visa bara pris (som Köp), Standard = progress + procent</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {[{ value: undefined, label: "Standard" }, { value: "simple", label: "Enkel" }].map(opt => {
+                    const active = (appTexts.goalSections || {}).displayMode === opt.value || (!opt.value && !(appTexts.goalSections || {}).displayMode);
+                    return (
+                      <button key={opt.label} onClick={() => setAppTexts(t => ({ ...t, goalSections: { ...(t.goalSections || {}), displayMode: opt.value } }))}
+                        style={{ padding: "5px 14px", borderRadius: 8, border: `1.5px solid ${active ? "#8b5cf6" : "var(--border)"}`, background: active ? "#8b5cf620" : "transparent", color: active ? "#8b5cf6" : "var(--text2)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{opt.label}</button>
+                    );
+                  })}
+                </div>
+              </div>
               {[
                 { key: "milestones", icon: "🏁", label: "Milstolpar",       desc: "25%, 50%, 75% progress-prickar" },
                 { key: "deposit",    icon: "💰", label: "Sätt in pengar",   desc: "Knappar för insättning/uttag" },
