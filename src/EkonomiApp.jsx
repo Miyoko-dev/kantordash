@@ -5250,6 +5250,13 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {}, appTexts = {
                         <span style={{ fontSize: 18 }}>🆓</span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: "#059669" }}>Gratis aktivitet – inget sparande behövs!</span>
                       </div>
+                    ) : simpleMode ? (
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ fontSize: 28, fontWeight: 900, color: goal.color, letterSpacing: "-0.02em" }}>{formatSEK(goal.target)}</div>
+                        {goal.saved > 0 && (
+                          <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 4 }}>💰 Sparat: {formatSEK(goal.saved)} · Kvar: {formatSEK(remaining)}</div>
+                        )}
+                      </div>
                     ) : <>
                     {/* Milestone dots */}
                     {showMilestones && <div style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center" }}>
