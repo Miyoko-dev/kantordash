@@ -4549,8 +4549,7 @@ function TravelGoalsPage({ travelGoals, setTravelGoals, canEdit, pushUndo = () =
     </div>
   );
 }
-
-
+const DEFAULT_GOALS_DATA = [
   { id: 1, name: "Bio-kväll", description: "Spara till en biokväll med popcorn", target: 100, saved: 60, color: "#f59e0b", icon: "🎬", category: "Nöje", monthlyDeposit: 0, monthlyActive: false, streak: 0, lastDepositMonth: null, milestonesSeen: [] },
   { id: 2, name: "Paris 2026", description: "Semester i Paris – flyg + hotell", target: 5000, saved: 1200, color: "#3b82f6", icon: "🗼", category: "Resor", monthlyDeposit: 500, monthlyActive: true, streak: 3, lastDepositMonth: null, milestonesSeen: [25] },
   { id: 3, name: "Ny laptop", description: "MacBook för jobb och studier", target: 15000, saved: 4500, color: "#8b5cf6", icon: "💻", category: "Teknik", monthlyDeposit: 1000, monthlyActive: true, streak: 2, lastDepositMonth: null, milestonesSeen: [25] },
