@@ -7637,6 +7637,25 @@ function AdminPage({ users, setUsers, expenses, setExpenses, history, pageVisibi
             <Card>
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>🎯 Mål — Synliga sektioner</div>
               <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16 }}>Välj vilka delar av målkorten som visas som standard</div>
+              {/* Display mode toggle */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid var(--border)", marginBottom: 4 }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>👁</span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>Visningsläge</div>
+                    <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 1 }}>Enkel = visa bara pris (som Köp), Standard = progress + procent</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {[{ value: undefined, label: "Standard" }, { value: "simple", label: "Enkel" }].map(opt => {
+                    const active = (appTexts.goalSections || {}).displayMode === opt.value || (!opt.value && !(appTexts.goalSections || {}).displayMode);
+                    return (
+                      <button key={opt.label} onClick={() => setAppTexts(t => ({ ...t, goalSections: { ...(t.goalSections || {}), displayMode: opt.value } }))}
+                        style={{ padding: "5px 14px", borderRadius: 8, border: `1.5px solid ${active ? "#8b5cf6" : "var(--border)"}`, background: active ? "#8b5cf620" : "transparent", color: active ? "#8b5cf6" : "var(--text2)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{opt.label}</button>
+                    );
+                  })}
+                </div>
+              </div>
               {[
                 { key: "milestones", icon: "🏁", label: "Milstolpar",       desc: "25%, 50%, 75% progress-prickar" },
                 { key: "deposit",    icon: "💰", label: "Sätt in pengar",   desc: "Knappar för insättning/uttag" },
