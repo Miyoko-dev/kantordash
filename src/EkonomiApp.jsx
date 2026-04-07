@@ -4568,6 +4568,7 @@ function GoalsPage({ goals, setGoals, canEdit, pushUndo = () => {}, appTexts = {
   const showDeposit = gs.deposit !== false;
   const showTimeline = gs.timeline !== false;
   const showCategory = gs.category !== false;
+  const simpleMode = gs.displayMode === "simple";
   const [showAdd, setShowAdd] = useState(false);
   const [adjustGoalId, setAdjustGoalId] = useState(null);
   const [adjustMode, setAdjustMode] = useState("add");
