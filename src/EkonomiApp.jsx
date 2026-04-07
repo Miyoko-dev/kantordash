@@ -224,13 +224,13 @@ function ProgressBar({ value, max, color = "#3b82f6", height = 6 }) {
 }
 
 // ---- CARD ----
-function Card({ children, style = {}, className = "" }) {
+function Card({ children, style = {}, className = "", ...rest }) {
   return (
     <div style={{
       background: "var(--card)", borderRadius: 16, padding: "20px 24px",
       boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)",
       border: "1px solid var(--border)", ...style
-    }}>
+    }} className={className} {...rest}>
       {children}
     </div>
   );
