@@ -4339,7 +4339,7 @@ function TravelGoalsPage({ travelGoals, setTravelGoals, canEdit, pushUndo = () =
             const minBudget = Math.min(...budgetTotals);
             const maxBudget = Math.max(...budgetTotals);
             return (
-              <Card key={trip.id} style={{ cursor: "pointer", overflow: "hidden", position: "relative" }} onClick={() => { setOpenTripId(trip.id); setActiveBudgetKey(selectedBudget?.key || trip.budgets[0]?.key); }}>
+              <Card key={trip.id} style={{ cursor: "pointer", overflow: "hidden", position: "relative", transition: "transform 0.15s, box-shadow 0.15s" }} className="hover:shadow-lg hover:scale-[1.01]" onClick={() => { setOpenTripId(trip.id); setActiveBudgetKey(selectedBudget?.key || trip.budgets[0]?.key); }}>
                 <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: trip.color }} />
                 {trip.image && (
                   <div style={{ margin: "-20px -24px 12px", overflow: "hidden", maxHeight: 120 }}>
